@@ -203,6 +203,7 @@ mkdir "$HERE/test"
 fi
 echo 'set(TEST_FILES' > "$HERE/test/CMakeLists.txt"
 echo test/TestFilteredStandardLikelihood.cpp | sed 's|^|${PROJECT_SOURCE_DIR}/|g' >> "$HERE/test/CMakeLists.txt"
+echo test/TestGtrGammaLikelihood.cpp | sed 's|^|${PROJECT_SOURCE_DIR}/|g' >> "$HERE/test/CMakeLists.txt"
 echo test/Test.cpp | sed 's|^|${PROJECT_SOURCE_DIR}/|g' >> "$HERE/test/CMakeLists.txt"
 echo test/RevBayesCoreTestMain.cpp | sed 's|^|${PROJECT_SOURCE_DIR}/|g' >> "$HERE/test/CMakeLists.txt"
 echo ')

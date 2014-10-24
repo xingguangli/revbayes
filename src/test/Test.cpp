@@ -13,6 +13,7 @@
 #include "RbOptions.h"
 #include "Test.h"
 #include "TestFilteredStandardLikelihood.h"
+#include "TestGtrGammaLikelihood.h"
 /*
 #include "TestAutocorrelatedBranchHeterogeneousGtrModel.h"
 #include "TestCoala.h"
@@ -23,7 +24,6 @@
 #include "TestConstantPopCoalescent.h"
 #include "TestCharacterHistory.h"
 #include "TestDPPRelClock.h"
-#include "TestGtrGammaLikelihood.h"
 #include "TestBranchHeterogeneousGtrModel.h"
 #include "TestBranchHeterogeneousHkyModel.h"
 #include "TestBranchHeterogeneousTamura92Model.h"
@@ -73,6 +73,7 @@ bool Test::performTests(int argc, const char * argv[]) {
     // Newer tests
     ////////////////
     
+    /*
     try {
         numAttempted += 1;
         TestFilteredStandardLikelihood testFSL = TestFilteredStandardLikelihood("data/morpho.nex", "data/morpho.tre");
@@ -84,6 +85,20 @@ bool Test::performTests(int argc, const char * argv[]) {
     } catch (RbException &e) {
         std::cout << e.getMessage() << std::endl;
     }
+    */
+        /* A GTR+Gamma model test */
+    try {
+        numAttempted += 1;
+        TestGtrGammaLikelihood testGtrGamma = TestGtrGammaLikelihood("data/primates_mtDNA.nex", "data/primates.tree");
+        if (testGtrGamma.run()) {
+            numPassed += 1;
+        } else {
+            std::cerr << "TestGtrGammaLikelihood failed \n";
+        }
+    } catch (RbException &e) {
+        std::cout << e.getMessage() << std::endl;
+    }
+
 #if 0 // commenting out broken tests
 	   
     
@@ -176,13 +191,6 @@ bool Test::performTests(int argc, const char * argv[]) {
 //        std::cout << e.getMessage() << std::endl;
 //    }
 //    
-    /* A GTR+Gamma model test */
-    try {
-        TestGtrGammaLikelihood testGtrGamma = TestGtrGammaLikelihood("data/primates.nex", "trees/primates.tree");
-        testGtrGamma.run();
-    } catch (RbException &e) {
-        std::cout << e.getMessage() << std::endl;
-    }
     
 //
 //    /* A branch-heterogeneous Tamura 1992 model test */
