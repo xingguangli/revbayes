@@ -143,11 +143,7 @@ LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
 
 # TODO Split these up based on sub-package dependency
 INCLUDE_DIRECTORIES(' >> "$HERE/CMakeLists.txt"
-<<<<<<< HEAD
-find ui libs core test revlanguage -type d | grep -v "svn" | sed 's|^|    ${PROJECT_SOURCE_DIR}/|g' >> "$HERE/CMakeLists.txt"
-=======
-find libs core revlanguage -type d | grep -v "svn" | sed 's|^|    ${PROJECT_SOURCE_DIR}/|g' >> "$HERE/CMakeLists.txt"
->>>>>>> origin/language-edit
+find libs core test revlanguage -type d | grep -v "svn" | sed 's|^|    ${PROJECT_SOURCE_DIR}/|g' >> "$HERE/CMakeLists.txt"
 echo ' ${Boost_INCLUDE_DIR} )
 
 
