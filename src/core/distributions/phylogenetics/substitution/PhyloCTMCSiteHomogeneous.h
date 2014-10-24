@@ -9,6 +9,7 @@
 #include "TransitionProbabilityMatrix.h"
 #include "TreeChangeEventListener.h"
 #include "TypedDistribution.h"
+#include "DebugIO.h"
 
 namespace RevBayesCore {
     
@@ -87,7 +88,8 @@ void RevBayesCore::PhyloCTMCSiteHomogeneous<charType, treeType>::computeRootLike
     // get the pointers to the partial likelihoods of the left and right subtree
     const double* p_left   = this->partialLikelihoods + this->activeLikelihood[left]*this->activeLikelihoodOffset + left*this->nodeOffset;
     const double* p_right  = this->partialLikelihoods + this->activeLikelihood[right]*this->activeLikelihoodOffset + right*this->nodeOffset;
-    
+    debug_vec("computeRootLikelihood 2 node p_left", p_left, this->numSiteRates * this->numPatterns * this->numChars);
+    debug_vec("computeRootLikelihood 2 node p_right", p_right, this->numSiteRates * this->numPatterns * this->numChars);
     // create a vector for the per mixture likelihoods
     // we need this vector to sum over the different mixture likelihoods
     std::vector<double> per_mixture_Likelihoods = std::vector<double>(this->numPatterns,0.0);
@@ -274,6 +276,8 @@ void RevBayesCore::PhyloCTMCSiteHomogeneous<charType, treeType>::computeInternal
     const double*   p_right = this->partialLikelihoods + this->activeLikelihood[right]*this->activeLikelihoodOffset + right*this->nodeOffset;
     double*         p_node  = this->partialLikelihoods + this->activeLikelihood[nodeIndex]*this->activeLikelihoodOffset + nodeIndex*this->nodeOffset;
     
+    debug_vec("computeInternalNodeLikelihood p_left", p_left, this->numSiteRates * this->numPatterns * this->numChars);
+    debug_vec("computeInternalNodeLikelihood p_right", p_right, this->numSiteRates * this->numPatterns * this->numChars);
     // iterate over all mixture categories
     for (size_t mixture = 0; mixture < this->numSiteRates; ++mixture)
     {
@@ -319,6 +323,7 @@ void RevBayesCore::PhyloCTMCSiteHomogeneous<charType, treeType>::computeInternal
         
     } // end-for over all mixtures (=rate-categories)
     
+    debug_vec("computeInternalNodeLikelihood p_node", p_node, this->numSiteRates * this->numPatterns * this->numChars);
 }
 
 
@@ -425,7 +430,7 @@ void RevBayesCore::PhyloCTMCSiteHomogeneous<charType, treeType>::computeTipLikel
         p_mixture+=this->mixtureOffset;
         
     } // end-for over all mixture categories
-    
+    debug_vec("computeTipNodeLikelihood p_node", p_node, this->numSiteRates * this->numPatterns * this->numChars);
 }
 
 

@@ -1,6 +1,7 @@
 #include "ConstantNode.h"
 #include "DeterministicNode.h"
 #include "FilteredPhyloCTMCSiteHomogeneous.h"
+#include "PhyloCTMCSiteHomogeneous.h"
 #include "JcRateMatrixFunction.h"
 #include "NclReader.h"
 #include "NormalizeVectorFunction.h"
@@ -36,7 +37,7 @@ bool TestFilteredStandardLikelihood::run( void ) {
     ConstantNode<BranchLengthTree> *tau = new ConstantNode<BranchLengthTree>( "tau", new BranchLengthTree( *(*trees)[0] ) );
     // and the character model
     size_t numChar = data[0]->getNumberOfCharacters();
-    FilteredPhyloCTMCSiteHomogeneous<StandardState, BranchLengthTree> *charModel = new FilteredPhyloCTMCSiteHomogeneous<StandardState, BranchLengthTree>(tau, 3, false, numChar );
+    PhyloCTMCSiteHomogeneous<StandardState, BranchLengthTree> *charModel = new PhyloCTMCSiteHomogeneous<StandardState, BranchLengthTree>(tau, 3, false, numChar );
     charModel->setRateMatrix( q );
     TypedDistribution<AbstractDiscreteCharacterData> *td = charModel;
     StochasticNode< AbstractDiscreteCharacterData > *charactermodel = new StochasticNode< AbstractDiscreteCharacterData >("S", td);

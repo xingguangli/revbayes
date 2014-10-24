@@ -650,9 +650,8 @@ double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType, treeType>::compu
 template<class charType, class treeType>
 void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType, treeType>::fillLikelihoodVector(const TopologyNode &node, size_t nodeIndex) 
 {    
-    
     // check for recomputation
-    if ( dirtyNodes[nodeIndex] ) 
+    if (true ||  dirtyNodes[nodeIndex] ) 
     {
         // mark as computed
         dirtyNodes[nodeIndex] = false;
