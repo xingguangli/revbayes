@@ -68,12 +68,6 @@ bool Test::performTests(int argc, const char * argv[]) {
     time (&start);
     int numPassed = 0;
     int numAttempted = 0;
-    
-    ////////////////
-    // Newer tests
-    ////////////////
-    
-    /*
     try {
         numAttempted += 1;
         TestFilteredStandardLikelihood testFSL = TestFilteredStandardLikelihood("data/morpho.nex", "data/morpho.tre");
@@ -85,7 +79,8 @@ bool Test::performTests(int argc, const char * argv[]) {
     } catch (RbException &e) {
         std::cout << e.getMessage() << std::endl;
     }
-    */
+#if 0 // commenting out broken tests
+
         /* A GTR+Gamma model test */
     try {
         numAttempted += 1;
@@ -99,7 +94,6 @@ bool Test::performTests(int argc, const char * argv[]) {
         std::cout << e.getMessage() << std::endl;
     }
 
-#if 0 // commenting out broken tests
 	   
     
 	// #######
