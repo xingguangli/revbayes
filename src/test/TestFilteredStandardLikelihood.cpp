@@ -33,6 +33,8 @@ TestFilteredStandardLikelihood::TestFilteredStandardLikelihood(const std::string
 TestFilteredStandardLikelihood::~TestFilteredStandardLikelihood() {
 }
 
+//#define USE_GTR_RATE_MAT
+//#define USE_3_STATES
 
 bool TestFilteredStandardLikelihood::run( void ) {
     std::cerr << "  starting TestFilteredStandardLikelihood...\n" ;
@@ -89,18 +91,32 @@ bool TestFilteredStandardLikelihood::run( void ) {
     
     DeterministicNode<RbVector<double> > *site_rates_norm = new DeterministicNode<RbVector<double> >( "site_rates_norm", new NormalizeVectorFunction(site_rates, sumNV) );
     std::cout << "rates:\t" << site_rates_norm->getValue() << std::endl;
+    // and the character model
+    size_t numChar = data[0]->getNumberOfCharacters();
     
+#if defined USE_GTR_RATE_MAT
     DeterministicNode<RateMatrix> *q = new DeterministicNode<RateMatrix>( "Q", new GtrRateMatrixFunction(er, pi) );
+#else
+    DeterministicNode<RateMatrix> *q = new DeterministicNode<RateMatrix>( "Q", new JcRateMatrixFunction(
+#   if defined(USE_3_STATES)
+        3
+#   else
+        4
+#   endif
+        ) );
+#endif
     
     std::cout << "Q:\t" << q->getValue() << std::endl;
     
     ConstantNode<TimeTree> *tau = new ConstantNode<TimeTree>( "tau", new TimeTree( *trees[0] ) );
     std::cout << "tau:\t" << tau->getValue() << std::endl;
-    
-    // and the character model
-    size_t numChar = data[0]->getNumberOfCharacters();
+
 //    GeneralBranchHeterogeneousCharEvoModel<DnaState, TimeTree> *charModel = new GeneralBranchHeterogeneousCharEvoModel<DnaState, TimeTree>(tau, 4, true, numChar );
+#if defined USE_GTR_RATE_MAT
     PhyloCTMCSiteHomogeneousNucleotide<DnaState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneousNucleotide<DnaState, TimeTree>(tau, true, numChar );
+#else
+    PhyloCTMCSiteHomogeneous<StandardState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneous<StandardState, TimeTree>(tau, 3, true, numChar );
+#endif
     charModel->setRateMatrix( q );
     charModel->setSiteRates( site_rates_norm );
 //    charModel->setClockRate( clockRate );
