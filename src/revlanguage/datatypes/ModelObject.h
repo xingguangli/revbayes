@@ -44,7 +44,7 @@ namespace RevLanguage {
         virtual const TypeSpec&                 getTypeSpec(void) const = 0;                                                //!< Get Rev type spec (instance)
     
         // Utility functions you might want to override
-        virtual RevPtr<Variable>                executeMethod(const std::string& name, const std::vector<Argument>& args);  //!< Override to map member methods to internal functions
+        virtual RevPtr<Variable>                executeMethod(const std::string& name, const std::vector<Argument>& args, bool &found);  //!< Execute member functions
         
         // Basic utility functions you should not have to override
         RevObject*                              cloneDAG(std::map<const RevBayesCore::DagNode*, RevBayesCore::DagNode*>& nodesMap ) const;  //!< Clone the model DAG connected to this node
@@ -86,8 +86,7 @@ namespace RevLanguage {
 #include "ConverterNode.h"
 #include "IndirectReferenceNode.h"
 #include "MemberProcedure.h"
-//#include "Real.h"
-//#include "RealPos.h"
+#include "RlConstantNode.h"
 #include "RlDeterministicNode.h"
 #include "RlUtils.h"
 #include "StochasticNode.h"
@@ -126,13 +125,18 @@ RevLanguage::ModelObject<rbType>::ModelObject(RevBayesCore::TypedDagNode<rbType>
 {
     // increment the reference count to the value
     dagNode->incrementReferenceCount();
+    
+    // add the DAG node member methods
+    const MethodTable &dagMethods = dynamic_cast<RevMemberObject*>( dagNode )->getMethods();
+    methods.insertInheritedMethods( dagMethods );
+
 }
 
 
 
 template <typename rbType>
 RevLanguage::ModelObject<rbType>::ModelObject(const ModelObject &v) :
-    AbstractModelObject(),
+    AbstractModelObject( v ),
     dagNode( NULL )
 {
     if ( v.dagNode != NULL )
@@ -166,7 +170,9 @@ RevLanguage::ModelObject<rbType>& RevLanguage::ModelObject<rbType>::operator=(co
     
     if ( this != &v ) 
     {
-        // free the memory
+        // delegate to base class
+        AbstractModelObject::operator=( v );
+        
         // free the old value
         if ( dagNode != NULL )
         {
@@ -219,106 +225,20 @@ RevLanguage::RevObject* RevLanguage::ModelObject<rbType>::cloneDAG( std::map<con
 
 /* Map calls to member methods */
 template <typename rbType>
-RevLanguage::RevPtr<RevLanguage::Variable> RevLanguage::ModelObject<rbType>::executeMethod(std::string const &name, const std::vector<Argument> &args) {
+RevLanguage::RevPtr<RevLanguage::Variable> RevLanguage::ModelObject<rbType>::executeMethod(std::string const &name, const std::vector<Argument> &args, bool &found)
+{
     
-    if (name == "clamp") 
+    RevPtr<Variable> retVal = dynamic_cast<RevMemberObject *>( dagNode )->executeMethod(name, args, found);
+    
+    if ( found == true )
     {
-        // check whether the variable is actually a stochastic node
-        if ( !dagNode->isStochastic() )
-        {
-            throw RbException("Only stochastic variables can be clamped.");
-        }
-        // convert the pointer to the DAG node
-        RevBayesCore::StochasticNode<rbType>* stochNode = static_cast<RevBayesCore::StochasticNode<rbType> *>( dagNode );
-        
-        // get the observation
-        const rbType &observation = static_cast<const ModelObject<rbType> &>( args[0].getVariable()->getRevObject() ).getValue();
-        
-        // clamp
-        stochNode->clamp( RevBayesCore::Cloner<rbType, IsDerivedFrom<rbType, RevBayesCore::Cloneable>::Is >::createClone( observation ) );
-        
-        return NULL;
+        return retVal;
     }
-    else if (name == "lnProbability")
+    else
     {
-        // check whether the variable is actually a stochastic node
-        if ( !dagNode->isStochastic() )
-        {
-            throw RbException("You can only get the probability for stochastic variables.");
-        }
-        // convert the pointer to the DAG node
-        RevBayesCore::StochasticNode<rbType>* stochNode = static_cast<RevBayesCore::StochasticNode<rbType> *>( dagNode );
-        
-        // redraw the value
-//        Real *rv = new Real( stochNode->getLnProbability() );
-//
-//        return RevPtr<Variable>( new Variable(rv,"") );
-    }
-    else if (name == "probability")
-    {
-        // check whether the variable is actually a stochastic node
-        if ( !dagNode->isStochastic() )
-        {
-            throw RbException("You can only get the probability for stochastic variables.");
-        }
-        // convert the pointer to the DAG node
-        RevBayesCore::StochasticNode<rbType>* stochNode = static_cast<RevBayesCore::StochasticNode<rbType> *>( dagNode );
-        
-//        // redraw the value
-//        RealPos *rv = new RealPos( stochNode->getProbability() );
-//        
-//        return RevPtr<Variable>( new Variable(rv,"") );
-    }
-    else if (name == "redraw")
-    {
-        // check whether the variable is actually a stochastic node
-        if ( !dagNode->isStochastic() )
-        {
-            throw RbException("You can only set the value for stochastic variables.");
-        }
-        // convert the pointer to the DAG node
-        RevBayesCore::StochasticNode<rbType>* stochNode = static_cast<RevBayesCore::StochasticNode<rbType> *>( dagNode );
-        
-        // redraw the value
-        stochNode->redraw();
-        
-        return NULL;
-    }
-    else if (name == "setValue")
-    {
-        // check whether the variable is actually a stochastic node
-        if ( !dagNode->isStochastic() )
-        {
-            throw RbException("You can only set the value for stochastic variables.");
-        }
-        // convert the node
-        RevBayesCore::StochasticNode<rbType>* stochNode = static_cast<RevBayesCore::StochasticNode<rbType> *>( dagNode );
-        
-        // get the observation
-        const rbType &observation = static_cast<const ModelObject<rbType> &>( args[0].getVariable()->getRevObject() ).getValue();
-        
-        // set value
-        stochNode->setValue( RevBayesCore::Cloner<rbType, IsDerivedFrom<rbType, RevBayesCore::Cloneable>::Is >::createClone( observation ) );
-        
-        return NULL;
-    }
-    else if (name == "unclamp")
-    {
-        // Check whether the variable is actually a stochastic node
-        if ( !dagNode->isStochastic() )
-        {
-            throw RbException("Only stochastic variables can be clamped.");
-        }
-        // Convert the pointer to the DAG node
-        RevBayesCore::StochasticNode<rbType>* stochNode = static_cast<RevBayesCore::StochasticNode<rbType> *>( dagNode );
-        
-        // Unclamp
-        stochNode->unclamp();
-        
-        return NULL;
+        return RevObject::executeMethod( name, args, found );
     }
     
-    return RevObject::executeMethod( name, args );
 }
 
 
@@ -332,8 +252,8 @@ const std::string& RevLanguage::ModelObject<rbType>::getClassType(void) {
 
 
 /** Get class type spec describing type of object */
-template <typename rlType>
-const RevLanguage::TypeSpec& RevLanguage::ModelObject<rlType>::getClassTypeSpec(void) {
+template <typename rbType>
+const RevLanguage::TypeSpec& RevLanguage::ModelObject<rbType>::getClassTypeSpec(void) {
     
     static TypeSpec revTypeSpec = TypeSpec( getClassType(), &RevObject::getClassTypeSpec() );
     
@@ -391,7 +311,8 @@ void RevLanguage::ModelObject<rbType>::makeConstantValue( void ) {
     else
     {
         // @todo: we might check if this variable is already constant. Now we construct a new value anyways.
-        RevBayesCore::ConstantNode<rbType>* newNode = new RevBayesCore::ConstantNode<rbType>(dagNode->getName(), RevBayesCore::Cloner<rbType, IsDerivedFrom<rbType, RevBayesCore::Cloneable>::Is >::createClone( dagNode->getValue() ) );
+        RevBayesCore::ConstantNode<rbType>* newNode = new ConstantNode<rbType>(dagNode->getName(), RevBayesCore::Cloner<rbType, IsDerivedFrom<rbType, RevBayesCore::Cloneable>::Is >::createClone( dagNode->getValue() ) );
+//        RevBayesCore::ConstantNode<rbType>* newNode = new RevBayesCore::ConstantNode<rbType>(dagNode->getName(), RevBayesCore::Cloner<rbType, IsDerivedFrom<rbType, RevBayesCore::Cloneable>::Is >::createClone( dagNode->getValue() ) );
         dagNode->replace(newNode);
         
         // delete the value if there are no other references to it.

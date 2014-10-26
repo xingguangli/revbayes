@@ -10,15 +10,20 @@ namespace RevLanguage {
     class StochasticNode : public RevBayesCore::StochasticNode<valueType>, public RevMemberObject {
         
     public:
-        StochasticNode(const std::string& n);
+        StochasticNode(const std::string& n, RevBayesCore::TypedDistribution<valueType>* dist, Distribution* rlDist);
         StochasticNode(const StochasticNode<valueType> &n);
         virtual                            ~StochasticNode(void);
         
         // public methods
-        StochasticNode<valueType>*          clone(void) const;                                                  //!< Clone the node
-        
+        StochasticNode<valueType>*          clone(void) const;                                                                              //!< Clone the node
+        virtual RevPtr<Variable>            executeMethod(const std::string& name, const std::vector<Argument>& args, bool &found);         //!< Execute member method (if applicable)
+        const MethodTable&                  getMethods( void ) const;                                                                       //!< Get the member methods
+        Distribution&                       getRlDistribution(void);                                                                        //!< Get the Rev distribution
+        const Distribution&                 getRlDistribution(void) const;                                                                  //!< Get the Rev distribution (const)
+
     private:
         
+        Distribution*                       rlDistribution;                                                                                 //!< Rev distribution
         MethodTable                         methods;
         
         
@@ -27,13 +32,16 @@ namespace RevLanguage {
 }
 
 
+#include "RealPos.h"
+
 template<class valueType>
-RevLanguage::StochasticNode<valueType>::StochasticNode( const std::string& n ) :
-RevBayesCore::StochasticNode<valueType>( n, fxn )
+RevLanguage::StochasticNode<valueType>::StochasticNode( const std::string& n, RevBayesCore::TypedDistribution<valueType>* dist, Distribution* rlDist ) :
+    RevBayesCore::StochasticNode<valueType>( n, dist ),
+    rlDistribution( rlDist )
 {
     
     ArgumentRules* clampArgRules = new ArgumentRules();
-    clampArgRules->push_back( new ArgumentRule("x", getTypeSpec(), ArgumentRule::BY_VALUE ) );
+    clampArgRules->push_back( new ArgumentRule("x", rlDistribution->getVariableTypeSpec(), ArgumentRule::BY_VALUE ) );
     this->methods.addFunction("clamp", new MemberProcedure( RlUtils::Void, clampArgRules) );
     
     ArgumentRules* redrawArgRules = new ArgumentRules();
@@ -46,7 +54,7 @@ RevBayesCore::StochasticNode<valueType>( n, fxn )
     this->methods.addFunction("lnProbability", new MemberProcedure( Real::getClassTypeSpec(), lnprobArgRules) );
     
     ArgumentRules* setValueArgRules = new ArgumentRules();
-    setValueArgRules->push_back( new ArgumentRule("x", getTypeSpec(), ArgumentRule::BY_VALUE ) );
+    setValueArgRules->push_back( new ArgumentRule("x", rlDistribution->getVariableTypeSpec(), ArgumentRule::BY_VALUE ) );
     this->methods.addFunction("setValue", new MemberProcedure( RlUtils::Void, setValueArgRules) );
     
     ArgumentRules* unclampArgRules = new ArgumentRules();
@@ -58,6 +66,7 @@ RevBayesCore::StochasticNode<valueType>( n, fxn )
 template<class valueType>
 RevLanguage::StochasticNode<valueType>::StochasticNode( const RevLanguage::StochasticNode<valueType> &n ) :
     RevBayesCore::StochasticNode<valueType>( n ),
+    rlDistribution( n.rlDistribution->clone() ),
     methods( n.methods )
 {
     
@@ -67,6 +76,8 @@ RevLanguage::StochasticNode<valueType>::StochasticNode( const RevLanguage::Stoch
 template<class valueType>
 RevLanguage::StochasticNode<valueType>::~StochasticNode( void )
 {
+    
+    delete rlDistribution;
     
 }
 
@@ -79,6 +90,84 @@ RevLanguage::StochasticNode<valueType>* RevLanguage::StochasticNode<valueType>::
 }
 
 
+/* Execute calls to member methods */
+template <typename valueType>
+RevLanguage::RevPtr<RevLanguage::Variable> RevLanguage::StochasticNode<valueType>::executeMethod(std::string const &name, const std::vector<Argument> &args, bool &found)
+{
+    
+    if (name == "clamp")
+    {
+        
+        // we found the corresponding member method
+        found = true;
+        
+        // get the observation
+        const valueType &observation = static_cast<const ModelObject<valueType> &>( args[0].getVariable()->getRevObject() ).getValue();
+        
+        // clamp
+        this->clamp( RevBayesCore::Cloner<valueType, IsDerivedFrom<valueType, RevBayesCore::Cloneable>::Is >::createClone( observation ) );
+        
+        return NULL;
+    }
+    else if (name == "lnProbability")
+    {
+        
+        // we found the corresponding member method
+        found = true;
+        
+        return RevPtr<Variable>( new Variable( new Real( this->getLnProbability() ), "" ) );
+    }
+    else if (name == "probability")
+    {
+        
+        // we found the corresponding member method
+        found = true;
+        
+        return RevPtr<Variable>( new Variable( new RealPos( exp( this->getLnProbability() ) ), "" ) );
+    }
+    else if (name == "redraw")
+    {
+        
+        // we found the corresponding member method
+        found = true;
+        
+        // redraw the value
+        this->redraw();
+        
+        return NULL;
+    }
+    else if (name == "setValue")
+    {
+        
+        // we found the corresponding member method
+        found = true;
+        
+        // get the observation
+        const valueType &observation = static_cast<const ModelObject<valueType> &>( args[0].getVariable()->getRevObject() ).getValue();
+        
+        // set value
+        this->setValue( RevBayesCore::Cloner<valueType, IsDerivedFrom<valueType, RevBayesCore::Cloneable>::Is >::createClone( observation ) );
+        
+        return NULL;
+    }
+    else if (name == "unclamp")
+    {
+        
+        // we found the corresponding member method
+        found = true;
+        
+        // Unclamp
+        this->unclamp();
+        
+        return NULL;
+    }
+    
+    found = false;
+    
+    return NULL;
+}
+
+
 /**
  * Get common member methods.
  */
@@ -88,6 +177,22 @@ const RevLanguage::MethodTable& RevLanguage::StochasticNode<valueType>::getMetho
     
     // return the internal value
     return methods;
+}
+
+
+template<class valueType>
+RevLanguage::Distribution& RevLanguage::StochasticNode<valueType>::getRlDistribution( void )
+{
+    
+    return *rlDistribution;
+}
+
+
+template<class valueType>
+const RevLanguage::Distribution& RevLanguage::StochasticNode<valueType>::getRlDistribution( void ) const
+{
+    
+    return *rlDistribution;
 }
 
 
