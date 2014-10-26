@@ -70,7 +70,13 @@ bool Test::performTests(int argc, const char * argv[]) {
     int numAttempted = 0;
     try {
         numAttempted += 1;
-        TestFilteredStandardLikelihood testFSL = TestFilteredStandardLikelihood("data/morpho.nex", "data/morpho.tre");
+        TestFilteredStandardLikelihood testFSL = TestFilteredStandardLikelihood(
+#                                                                               if defined(READ_MORPHO_AS_DNA)
+                                                                                    "data/morpho-as-dna.nex",
+#                                                                               else
+                                                                                    "data/morpho.nex",
+#                                                                               endif
+                                                                                "data/morpho.tre");
         if (testFSL.run()) {
             numPassed += 1;
         } else {

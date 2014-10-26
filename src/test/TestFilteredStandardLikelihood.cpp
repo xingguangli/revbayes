@@ -34,9 +34,10 @@ TestFilteredStandardLikelihood::~TestFilteredStandardLikelihood() {
 }
 
 //#define USE_GTR_RATE_MAT
-#define USE_3_STATES
+//#define USE_3_STATES
 //#define USE_TIME_TREE
-//#define USE_RATE_HET
+//#define USE_NUCLEOTIDE
+#define USE_RATE_HET
 
 bool TestFilteredStandardLikelihood::run( void ) {
     std::cerr << "  starting TestFilteredStandardLikelihood...\n" ;
@@ -78,15 +79,30 @@ bool TestFilteredStandardLikelihood::run( void ) {
         std::cout << "rates:\t" << site_rates_norm->getValue() << std::endl;
 #   endif
 
+#if defined(USE_3_STATES) && defined(USE_NUCLEOTIDE)
+#error "cannot use 3 state and nucleotide type"
+#endif
+#if defined(USE_3_STATES) && defined(USE_GTR_RATE_MAT)
+#error "cannot use 3 state and USE_GTR_RATE_MAT"
+#endif
+
 #   if defined(USE_GTR_RATE_MAT)
         ConstantNode<RbVector<double> > *pi = new ConstantNode<RbVector<double> >( "pi", new RbVector<double>(4, 1.0/4.0) );
         ConstantNode<RbVector<double> > *er = new ConstantNode<RbVector<double> >( "er", new RbVector<double>(6, 1.0/6.0) );
         DeterministicNode<RateMatrix> *q = new DeterministicNode<RateMatrix>( "Q", new GtrRateMatrixFunction(er, pi) );
         std::cout << "Q:\t" << q->getValue() << std::endl;
-#       if defined(USE_TIME_TREE)
-            PhyloCTMCSiteHomogeneousNucleotide<DnaState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneousNucleotide<DnaState, TimeTree>(tau, true, numChar);
+#       if defined (USE_NUCLEOTIDE)
+#           if defined(USE_TIME_TREE)
+                PhyloCTMCSiteHomogeneousNucleotide<DnaState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneousNucleotide<DnaState, TimeTree>(tau, false, numChar);
+#           else
+                PhyloCTMCSiteHomogeneousNucleotide<DnaState, BranchLengthTree> *charModel = new PhyloCTMCSiteHomogeneousNucleotide<DnaState, BranchLengthTree>(tau, false, numChar );
+#           endif
 #       else
-            PhyloCTMCSiteHomogeneous<DnaState, BranchLengthTree> *charModel = new PhyloCTMCSiteHomogeneous<DnaState, BranchLengthTree>(tau, 4, false, numChar );
+#           if defined(USE_TIME_TREE)
+                PhyloCTMCSiteHomogeneous<DnaState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneous<DnaState, TimeTree>(tau, false, numChar);
+#           else
+                PhyloCTMCSiteHomogeneous<DnaState, BranchLengthTree> *charModel = new PhyloCTMCSiteHomogeneous<DnaState, BranchLengthTree>(tau, 4, false, numChar );
+#           endif
 #       endif
 #   else
         DeterministicNode<RateMatrix> *q = new DeterministicNode<RateMatrix>( "Q", new JcRateMatrixFunction(
@@ -96,16 +112,24 @@ bool TestFilteredStandardLikelihood::run( void ) {
                                                                                                                 4
 #                                                                                                           endif
                                                                                                             ));
-#       if defined(USE_TIME_TREE)
-            PhyloCTMCSiteHomogeneous<StandardState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneous<StandardState, TimeTree>(tau, true, numChar);
+#       if defined (USE_NUCLEOTIDE)
+#          if defined(USE_TIME_TREE)
+                PhyloCTMCSiteHomogeneousNucleotide<StandardState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneousNucleotide<StandardState, TimeTree>(tau, false, numChar);
+#           else
+                PhyloCTMCSiteHomogeneousNucleotide<StandardState, BranchLengthTree> *charModel = new PhyloCTMCSiteHomogeneousNucleotide<StandardState, BranchLengthTree>(tau, false, numChar );
+#           endif
 #       else
-            PhyloCTMCSiteHomogeneous<StandardState, BranchLengthTree> *charModel = new PhyloCTMCSiteHomogeneous<StandardState, BranchLengthTree>(tau, 
-#                                                                                                           if defined(USE_3_STATES)
-                                                                                                                3,
-#                                                                                                           else
-                                                                                                                4,
-#                                                                                                           endif
-                                                                                                                 false, numChar );
+#          if defined(USE_TIME_TREE)
+                PhyloCTMCSiteHomogeneous<StandardState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneous<StandardState, TimeTree>(tau, true, numChar);
+#           else
+                PhyloCTMCSiteHomogeneous<StandardState, BranchLengthTree> *charModel = new PhyloCTMCSiteHomogeneous<StandardState, BranchLengthTree>(tau, 
+#                                                                                                               if defined(USE_3_STATES)
+                                                                                                                    3,
+#                                                                                                               else
+                                                                                                                    4,
+#                                                                                                               endif
+                                                                                                                     false, numChar );
+#           endif
 #       endif
 #   endif
 #   if defined(USE_RATE_HET)
