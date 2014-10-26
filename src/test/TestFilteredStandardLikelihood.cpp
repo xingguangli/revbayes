@@ -22,6 +22,7 @@
 #include "UniformDistribution.h"
 #include "VectorFunction.h"
 #include "RbVector.h"
+#include "DiscretizeGammaFunction.h"
 
 #include <vector>
 
@@ -57,6 +58,14 @@ bool TestFilteredStandardLikelihood::run( void ) {
     size_t numChar = discrD->getNumberOfCharacters();
 
 #   if defined(USE_RATE_HET)
+		ConstantNode<double>* shape = new ConstantNode<double>("alpha", new double(0.5) );
+		ConstantNode<double>* rate = new ConstantNode<double>("", new double(0.5) );
+		ConstantNode<int>* numCats = new ConstantNode<int>("ncat", new int(4) );
+
+		DiscretizeGammaFunction *dFunc = new DiscretizeGammaFunction( shape, rate, numCats, false );
+		DeterministicNode<RbVector<double> > *site_rates_norm_2 = new DeterministicNode<RbVector<double> >( "site_rates_norm", dFunc );
+
+
         ConstantNode<double> *alpha = new ConstantNode<double>("alpha", new double(0.5) );
         std::cout << "alpha:\t" << alpha->getValue() << std::endl;
         ConstantNode<double> *q1 = new ConstantNode<double>("q1", new double(0.125) );
@@ -77,6 +86,7 @@ bool TestFilteredStandardLikelihood::run( void ) {
         DeterministicNode<RbVector<double> > *site_rates_norm = new DeterministicNode<RbVector<double> >( "site_rates_norm", new NormalizeVectorFunction(site_rates, sumNV) );
         std::cout << "rates:\t" << site_rates->getValue() << std::endl;
         std::cout << "rates:\t" << site_rates_norm->getValue() << std::endl;
+        std::cout << "rates:\t" << site_rates_norm_2->getValue() << std::endl;
 #   endif
 
 #if defined(USE_3_STATES) && defined(USE_NUCLEOTIDE)
