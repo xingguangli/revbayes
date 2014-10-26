@@ -61,6 +61,7 @@ Test::~Test() {
     
 }
 
+//#define READ_MORPHO_AS_DNA
 
 
 bool Test::performTests(int argc, const char * argv[]) {

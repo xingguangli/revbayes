@@ -338,7 +338,8 @@ void RevBayesCore::PhyloCTMCSiteHomogeneous<charType, treeType>::computeTipLikel
     
     // compute the transition probabilities
     this->updateTransitionProbabilities( nodeIndex, node.getBranchLength() );
-    
+    debug_vec("computeTipNodeLikelihood char_node", &(char_node[0]), this->numPatterns);
+
     double*   p_mixture      = p_node;
     
     // iterate over all mixture categories
