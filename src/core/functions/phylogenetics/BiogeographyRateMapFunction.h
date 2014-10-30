@@ -9,6 +9,7 @@
 #ifndef __rb_mlandis__BiogeographyRateMapFunction__
 #define __rb_mlandis__BiogeographyRateMapFunction__
 
+//#include "CountRateModifier.h"
 #include "GeographyRateModifier.h"
 #include "RateMatrix.h"
 #include "RateMap_Biogeography.h"
@@ -34,11 +35,10 @@ namespace RevBayesCore {
         // set parameters
         void                                                setClockRate(const TypedDagNode< double > *r);
         void                                                setClockRate(const TypedDagNode< RbVector< double > > *r);
-        //void                                                setDistancePower(const TypedDagNode<double>* dp);
         void                                                setGeographyRateModifier(const TypedDagNode<GeographyRateModifier>* drm);
+//        void                                                setCountRateModifier(const TypedDagNode<double>* rsrm);
         void                                                setGainLossRates(const TypedDagNode< RbVector<double> >* glr);
         void                                                setRateMatrix(const TypedDagNode<RateMatrix>* rm);
-//        void                                                setGainLossRates(const TypedDagNode< RbVector<std::vector<double> > >* glr);
         void                                                setRootFrequencies(const TypedDagNode< RbVector< double > > *f);
         void                                                update(void);
         
@@ -53,12 +53,10 @@ namespace RevBayesCore {
         const TypedDagNode<RateMatrix>*                     homogeneousRateMatrix;
         const TypedDagNode<RbVector<RateMatrix> >*          heterogeneousRateMatrices;
 
-//        const TypedDagNode< RbVector<double> >*               homogeneousGainLossRates;
-//        const TypedDagNode< RbVector<double> >*               heterogeneousGainLossRates;
-        //const TypedDagNode<double>*                             distancePower;
         const TypedDagNode<GeographyRateModifier>*              geographyRateModifier;
+//      const TypedDagNode<CountRateModifier>*                  countRateModifier;
         const TypedDagNode<TimeTree>*                           tau;
-        const TypedDagNode< RbVector<double> >*                 rootFrequencies;
+        const TypedDagNode< RbVector<double> >*             rootFrequencies;
         
         // geography epochs
         // rate epochs
@@ -69,7 +67,7 @@ namespace RevBayesCore {
         bool                                                useGeographicDistance;
         
     };
-        
+    
 }
 
 #endif /* defined(__rb_mlandis__BiogeographyRateMapFunction__) */

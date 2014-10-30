@@ -250,6 +250,7 @@ double RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::computeIn
     
     if (node.isRoot() && useTail == false)
     {
+       
         return lnL;
     }
     
@@ -315,8 +316,32 @@ double RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::computeIn
             }
             
             // lnL for stepwise events for p(x->y)
+            
+        
+//            for (size_t i = 0; i < currState.size(); i++)
+//            {
+//                if ( (*it_h)->getIndex() == i )
+//                {
+//                    if ((*it_h)->getState())
+//                        std::cout << "G";
+//                    else
+//                        std::cout << "L";
+//                }
+//                else
+//                {
+//                    if (currState[i]->getState() == 0)
+//                        std::cout << " ";
+//                    else
+//                        std::cout << ".";
+//                }
+//                if (i % 5 == 4)
+//                    std::cout << "\n";
+//            }
+//            std:: cout << "\n";
+            
             double tr = rm.getRate(node, currState, *it_h, counts, currAge);
             double sr = rm.getSumOfRates(node, currState, counts, currAge);
+            
             lnL += -(sr * da) + log(tr);
             
 //            if ( lnL < -1E20 )
@@ -540,45 +565,58 @@ size_t RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::numOn(con
 template<class charType, class treeType>
 void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::redrawValue( void )
 {
-    if (this->tipsInitialized == false)
+    std::vector<TopologyNode*> nodes = AbstractTreeHistoryCtmc<charType,treeType>::tau->getValue().getNodes();
+    
+//    if (this->tipsInitialized == false)
+    if (this->dagNode->isClamped())
         initializeValue();
     
-    std::set<size_t> indexSet;
-    for (size_t i = 0; i < this->numSites; i++)
-        indexSet.insert(i);
-
-    // sample node states
-    std::vector<TopologyNode*> nodes = AbstractTreeHistoryCtmc<charType,treeType>::tau->getValue().getNodes();
-    for (size_t i = 0; i < nodes.size(); i++)
-    {
-        TopologyNode* nd = nodes[i];
-        
-        int samplePathEndCount = 0;
-        do
-        {
-            samplePathEndCount++;
-        } while (samplePathEnd(*nd,indexSet) == false && samplePathEndCount < 100);
-  
-        int samplePathStartCount = 0;
-        do
-        {
-            samplePathStartCount++;
-        } while (samplePathStart(*nd,indexSet) == false && samplePathStartCount < 100);
-    }
     
-    // sample paths
-    for (size_t i = 0; i < nodes.size(); i++)
+    
+    if (!true)
     {
-        TopologyNode* nd = nodes[i];
-
-        int samplePathHistoryCount = 0;
-        do
-        {
-            
-            samplePathHistoryCount++;
-        } while (samplePathHistory(*nd,indexSet) == false && samplePathHistoryCount < 100);
         
-//        this->histories[i]->print();
+        std::set<size_t> indexSet;
+        for (size_t i = 0; i < this->numSites; i++)
+            indexSet.insert(i);
+
+        // sample node states
+                for (size_t i = 0; i < nodes.size(); i++)
+        {
+            TopologyNode* nd = nodes[i];
+            
+            int samplePathEndCount = 0;
+            do
+            {
+                samplePathEndCount++;
+            } while (samplePathEnd(*nd,indexSet) == false && samplePathEndCount < 100);
+      
+            int samplePathStartCount = 0;
+            do
+            {
+                samplePathStartCount++;
+            } while (samplePathStart(*nd,indexSet) == false && samplePathStartCount < 100);
+        }
+        
+        // sample paths
+        for (size_t i = 0; i < nodes.size(); i++)
+        {
+            TopologyNode* nd = nodes[i];
+
+            int samplePathHistoryCount = 0;
+            do
+            {
+                
+                samplePathHistoryCount++;
+            } while (samplePathHistory(*nd,indexSet) == false && samplePathHistoryCount < 100);
+            
+    //        this->histories[i]->print();
+        }
+    }
+    else
+    {
+        // enabling this gives bad access errors -- std::set<CharacterHistory*> objects may not be copied properly?
+        simulate();
     }
     
     double lnL = this->computeLnProbability();
@@ -1119,6 +1157,7 @@ void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::setCladogen
 template<class charType, class treeType>
 void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::simulate(void)
 {
+    
     this->RevBayesCore::AbstractTreeHistoryCtmc<charType,treeType>::simulate();
 }
 
@@ -1127,7 +1166,6 @@ void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::simulateCla
 {
     
     const std::vector<CharacterEvent*>& nodeChildState = this->histories[ nd.getIndex() ]->getChildCharacters();
-    
     const std::vector<TopologyNode*>& children = nd.getChildren();
     
     // draw bud/trunk states
@@ -1140,22 +1178,23 @@ void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::simulateCla
     double u_csf = GLOBAL_RNG->uniform01();
     int cs = 0;
     const std::vector<double>& csf = cladogenicStateFreqs->getValue();
-    for (size_t i = 0; i < csf[i]; i++)
+    for (size_t i = 0; i < csf.size(); i++)
     {
+        
         u_csf -= csf[i];
         if (u_csf <= 0.0)
         {
-            cs = i;
-            cladogenicState[ children[0]->getIndex() ] = i;
-            cladogenicState[ children[1]->getIndex() ] = i;
+            cs = i + 1;
             break;
         }
     }
+    
 //    cs = 0;
     
     // narrow A|A
     if (numOn(nodeChildState) == 1)
     {
+        cs = 0;
         for (size_t i = 0; i < children.size(); i++)
         {
             std::vector<CharacterEvent*> childParentState;
@@ -1165,7 +1204,7 @@ void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::simulateCla
         }
     }
     // wide ABCD|ABCD
-    else if (cs == 0)
+    else if (cs == 1)
     {
         for (size_t i = 0; i < children.size(); i++)
         {
@@ -1182,7 +1221,7 @@ void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::simulateCla
     }
     
     // subset A|ABCD
-    else if (cs == 1)
+    else if (cs == 2)
     {
         std::set<size_t> present;
         for (size_t i = 0; i < nodeChildState.size(); i++)
@@ -1220,7 +1259,7 @@ void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::simulateCla
     }
     
     // allopatry AB|CD
-    else if (cs == 2)
+    else if (cs == 3)
     {
         std::vector<size_t> trunkAreas(this->numSites, 0);
         std::vector<size_t> budAreas(this->numSites, 0);
@@ -1247,7 +1286,12 @@ void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::simulateCla
             this->histories[ children[i]->getIndex() ]->setParentCharacters(childParentState);
         }
     }
-    
+    else
+    {
+        throw RbException("ERROR: simulateCladogenesis did not update parent characters of child nodes.");
+    }
+    cladogenicState[ children[0]->getIndex() ] = cs;
+    cladogenicState[ children[1]->getIndex() ] = cs;
 }
 
 template<class charType, class treeType>
@@ -1265,8 +1309,9 @@ void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::simulateHis
     std::vector<CharacterEvent*> currState = bh->getParentCharacters();
     
     // simulate path
+    double sum_rates = rm->getSiteRate(node, 0, 1) + rm->getSiteRate(node, 1, 0);
     std::set<CharacterEvent*,CharacterEventCompare> history;
-    double startAge = ( node.isRoot() ? node.getAge()*5 : node.getParent().getAge() );
+    double startAge = ( node.isRoot() ? node.getAge() * 5 : node.getParent().getAge() );
     double branchLength = startAge - node.getAge();
     
     
@@ -1371,6 +1416,7 @@ void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::simulateHis
     }
     
     bh->setChildCharacters(currState);
+//    bh->print();
     
 }
 
@@ -1397,9 +1443,9 @@ void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::simulate(co
         for (size_t i = 0; i < this->numSites; i++)
         {
             unsigned s = 0;
-            if (rm->isAreaAvailable(i, node.getAge()))
+            if (rm->isAreaAvailable(i, node.getAge()) && GLOBAL_RNG->uniform01() < 0.25)
                 s = 1;
-            parentState.push_back(new CharacterEvent(i, s, node.getAge()*5));
+            parentState.push_back(new CharacterEvent(i, s, node.getAge() * 5));
         }
         
         bh->setParentCharacters(parentState);
@@ -1428,7 +1474,7 @@ void RevBayesCore::BiogeographicTreeHistoryCtmc<charType, treeType>::simulate(co
 
     if ( node.isTip() )
     {
-        std::cout << "adding " << node.getName() << "\n";
+//        std::cout << "adding " << node.getName() << "\n";
         taxa[nodeIndex].setTaxonName( node.getName() );
     }
     else

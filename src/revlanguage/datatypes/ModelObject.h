@@ -83,6 +83,7 @@ namespace RevLanguage {
 #include "ArgumentRules.h"
 #include "Cloner.h"
 #include "ConstantNode.h"
+#include "ContinuousCharacterData.h"
 #include "ConverterNode.h"
 #include "IndirectReferenceNode.h"
 #include "MemberProcedure.h"
@@ -109,7 +110,7 @@ RevLanguage::ModelObject<rbType>::ModelObject() :
 template <typename rbType>
 RevLanguage::ModelObject<rbType>::ModelObject(rbType *v) :
     AbstractModelObject(),
-    dagNode( new RevBayesCore::ConstantNode<rbType>("",v) )
+    dagNode( new ConstantNode<rbType>("",v) )
 {
     // increment the reference count to the value
     dagNode->incrementReferenceCount();
@@ -312,7 +313,6 @@ void RevLanguage::ModelObject<rbType>::makeConstantValue( void ) {
     {
         // @todo: we might check if this variable is already constant. Now we construct a new value anyways.
         RevBayesCore::ConstantNode<rbType>* newNode = new ConstantNode<rbType>(dagNode->getName(), RevBayesCore::Cloner<rbType, IsDerivedFrom<rbType, RevBayesCore::Cloneable>::Is >::createClone( dagNode->getValue() ) );
-//        RevBayesCore::ConstantNode<rbType>* newNode = new RevBayesCore::ConstantNode<rbType>(dagNode->getName(), RevBayesCore::Cloner<rbType, IsDerivedFrom<rbType, RevBayesCore::Cloneable>::Is >::createClone( dagNode->getValue() ) );
         dagNode->replace(newNode);
         
         // delete the value if there are no other references to it.
@@ -502,11 +502,11 @@ void RevLanguage::ModelObject<rbType>::setValue(rbType *x) {
     
     if ( dagNode == NULL )
     {
-        newNode = new RevBayesCore::ConstantNode<rbType>("",x);
+        newNode = new ConstantNode<rbType>("",x);
     }
     else
     {
-        newNode = new RevBayesCore::ConstantNode<rbType>(dagNode->getName(),x);
+        newNode = new ConstantNode<rbType>(dagNode->getName(),x);
         dagNode->replace(newNode);
         
         if ( dagNode->decrementReferenceCount() == 0 )

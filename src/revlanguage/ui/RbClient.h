@@ -15,15 +15,13 @@ struct tabCompletionInfo{
         std::string compMatch;
     };
 
-class RbClient : public EditorMachineObserver {
+class RbClient {
 public:
     void setTabCompletionInfo(const char *buf);
     
-    void startInterpretor();
+    void startInterpretor(void);
     tabCompletionInfo getTabCompleteInfo(const char *buf);
     
-    // EditorMachineObserver
-    void eventStateChanged(EditorState *state, EditorStateChangeType type);
     
 private:
     
