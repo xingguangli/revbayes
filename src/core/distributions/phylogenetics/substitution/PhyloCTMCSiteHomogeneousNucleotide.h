@@ -112,8 +112,8 @@ void RevBayesCore::PhyloCTMCSiteHomogeneousNucleotide<charType, treeType>::compu
     // get the pointers to the partial likelihoods of the left and right subtree
     const double* p_left   = this->partialLikelihoods + this->activeLikelihood[left]*this->activeLikelihoodOffset + left*this->nodeOffset;
     const double* p_right  = this->partialLikelihoods + this->activeLikelihood[right]*this->activeLikelihoodOffset + right*this->nodeOffset;
-    debug_vec("nuc computeRootLikelihood 2 node p_left", p_left, this->numSiteRates * this->numPatterns * this->numChars);
-    debug_vec("nuc computeRootLikelihood 2 node p_right", p_right, this->numSiteRates * this->numPatterns * this->numChars);
+    debug_mat("nuc computeRootLikelihood 2 node p_left", p_left, this->numSiteRates * this->numPatterns, this->numChars);
+    debug_mat("nuc computeRootLikelihood 2 node p_right", p_right, this->numSiteRates * this->numPatterns, this->numChars);
     // create a vector for the per mixture likelihoods
     // we need this vector to sum over the different mixture likelihoods
     std::vector<double> per_mixture_Likelihoods = std::vector<double>(this->numPatterns,0.0);
@@ -244,9 +244,9 @@ void RevBayesCore::PhyloCTMCSiteHomogeneousNucleotide<charType, treeType>::compu
     const double* p_left   = this->partialLikelihoods + this->activeLikelihood[left]*this->activeLikelihoodOffset + left*this->nodeOffset;
     const double* p_right  = this->partialLikelihoods + this->activeLikelihood[right]*this->activeLikelihoodOffset + right*this->nodeOffset;
     const double* p_middle = this->partialLikelihoods + this->activeLikelihood[middle]*this->activeLikelihoodOffset + middle*this->nodeOffset;
-    debug_vec("computeRootLikelihood 2 node p_left", p_left, this->numSiteRates * this->numPatterns * this->numChars);
-    debug_vec("computeRootLikelihood 2 node p_right", p_right, this->numSiteRates * this->numPatterns * this->numChars);
-    debug_vec("computeRootLikelihood 2 node p_middle", p_middle, this->numSiteRates * this->numPatterns * this->numChars);
+    debug_mat("computeRootLikelihood 2 node p_left", p_left, this->numSiteRates * this->numPatterns, this->numChars);
+    debug_mat("computeRootLikelihood 2 node p_right", p_right, this->numSiteRates * this->numPatterns, this->numChars);
+    debug_mat("computeRootLikelihood 2 node p_middle", p_middle, this->numSiteRates * this->numPatterns, this->numChars);
     // create a vector for the per mixture likelihoods
     // we need this vector to sum over the different mixture likelihoods
     std::vector<double> per_mixture_Likelihoods = std::vector<double>(this->numPatterns,0.0);
@@ -385,8 +385,8 @@ void RevBayesCore::PhyloCTMCSiteHomogeneousNucleotide<charType, treeType>::compu
     double*         p_node  = this->partialLikelihoods + this->activeLikelihood[nodeIndex]*this->activeLikelihoodOffset + nodeIndex*this->nodeOffset;
 
 #   endif
-    debug_vec("computeInternalNodeLikelihood p_left", p_left, this->numSiteRates * this->numPatterns * this->numChars);
-    debug_vec("computeInternalNodeLikelihood p_right", p_right, this->numSiteRates * this->numPatterns * this->numChars);
+    debug_mat("computeInternalNodeLikelihood p_left", p_left, this->numSiteRates * this->numPatterns, this->numChars);
+    debug_mat("computeInternalNodeLikelihood p_right", p_right, this->numSiteRates * this->numPatterns, this->numChars);
     // iterate over all mixture categories
     for (size_t mixture = 0; mixture < this->numSiteRates; ++mixture)
     {
@@ -542,7 +542,7 @@ void RevBayesCore::PhyloCTMCSiteHomogeneousNucleotide<charType, treeType>::compu
     delete[] tmp_ac;
     delete[] tmp_gt;
 # endif
-    debug_vec("computeInternalNodeLikelihood p_node", p_node, this->numSiteRates * this->numPatterns * this->numChars);
+    debug_mat("computeInternalNodeLikelihood p_node", p_node, this->numSiteRates * this->numPatterns, this->numChars);
 }
 
 
@@ -657,7 +657,7 @@ void RevBayesCore::PhyloCTMCSiteHomogeneousNucleotide<charType, treeType>::compu
         p_mixture+=this->mixtureOffset;
         
     } // end-for over all mixture categories
-    debug_vec("computeInternalNodeLikelihood p_node", p_node, this->numSiteRates * this->numPatterns * this->numChars);
+    debug_mat("computeInternalNodeLikelihood p_node", p_node, this->numSiteRates * this->numPatterns, this->numChars);
 }
 
 

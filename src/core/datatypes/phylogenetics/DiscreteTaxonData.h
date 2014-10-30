@@ -210,7 +210,7 @@ void RevBayesCore::DiscreteTaxonData<charType>::addCharacter( const DiscreteChar
 template<class charType>
 void RevBayesCore::DiscreteTaxonData<charType>::addCharacter( const charType &newChar ) 
 {
-    
+    std::cerr << "    addCharacter(newChar.getState=" << newChar.getState() << ");\n";
     sequence.push_back( newChar );
     
 }
