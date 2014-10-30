@@ -60,28 +60,6 @@ bool TestFilteredStandardLikelihood::run( void ) {
 
 		DiscretizeGammaFunction *dFunc = new DiscretizeGammaFunction( shape, rate, numCats, false );
 		DeterministicNode<RbVector<double> > *site_rates_norm_2 = new DeterministicNode<RbVector<double> >( "site_rates_norm", dFunc );
-
-
-        ConstantNode<double> *alpha = new ConstantNode<double>("alpha", new double(0.5) );
-        std::cout << "alpha:\t" << alpha->getValue() << std::endl;
-        ConstantNode<double> *q1 = new ConstantNode<double>("q1", new double(0.125) );
-        DeterministicNode<double> *q1_value = new DeterministicNode<double>("q1_value", new QuantileFunction(q1, new GammaDistribution(alpha, alpha) ) );
-        ConstantNode<double> *q2 = new ConstantNode<double>("q2", new double(0.375) );
-        DeterministicNode<double> *q2_value = new DeterministicNode<double>("q2_value", new QuantileFunction(q2, new GammaDistribution(alpha, alpha) ) );
-        ConstantNode<double> *q3 = new ConstantNode<double>("q3", new double(0.625) );
-        DeterministicNode<double> *q3_value = new DeterministicNode<double>("q3_value", new QuantileFunction(q3, new GammaDistribution(alpha, alpha) ) );
-        ConstantNode<double> *q4 = new ConstantNode<double>("q4", new double(0.875) );
-        DeterministicNode<double> *q4_value = new DeterministicNode<double>("q4_value", new QuantileFunction(q4, new GammaDistribution(alpha, alpha) ) );
-        std::vector<const TypedDagNode<double>* > gamma_rates = std::vector<const TypedDagNode<double>* >();
-        gamma_rates.push_back(q1_value);
-        gamma_rates.push_back(q2_value);
-        gamma_rates.push_back(q3_value);
-        gamma_rates.push_back(q4_value);
-        DeterministicNode<RbVector<double> > *site_rates = new DeterministicNode<RbVector<double> >( "site_rates", new VectorFunction<double>(gamma_rates) );
-        ConstantNode<double> *sumNV = new ConstantNode<double>("sumnv", new double(1.0) );
-        DeterministicNode<RbVector<double> > *site_rates_norm = new DeterministicNode<RbVector<double> >( "site_rates_norm", new NormalizeVectorFunction(site_rates, sumNV) );
-        std::cout << "rates:\t" << site_rates->getValue() << std::endl;
-        std::cout << "rates:\t" << site_rates_norm->getValue() << std::endl;
         std::cout << "rates:\t" << site_rates_norm_2->getValue() << std::endl;
 #   endif
 
@@ -139,7 +117,7 @@ bool TestFilteredStandardLikelihood::run( void ) {
 #       endif
 #   endif
 #   if defined(USE_RATE_HET)
-        charModel->setSiteRates( site_rates_norm );
+        charModel->setSiteRates( site_rates_norm_2 );
 #   endif
     charModel->setRateMatrix( q );
     StochasticNode< AbstractDiscreteCharacterData > *charactermodel = new StochasticNode< AbstractDiscreteCharacterData >("S", charModel);
