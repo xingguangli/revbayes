@@ -14,6 +14,7 @@
  */
 
 #include "StandardState.h"
+#include "RbException.h"
 #include <sstream>
 #include <cstdlib>
 
@@ -216,6 +217,9 @@ void StandardState::setState(size_t pos, bool val) {
 void StandardState::setState(char symbol) {
     
     size_t pos = labels.find(symbol);
+    if (pos == std::string::npos) {
+        throw RbException("Symbol \"" + std::string(1, symbol) + "\" not found in state labels \"" + this->labels + "\"");
+    }
     state = (unsigned int)( 1 ) << pos;
     stateIndex = (unsigned)pos;
 }
