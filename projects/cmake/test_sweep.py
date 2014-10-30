@@ -2,6 +2,8 @@
 import subprocess
 import sys
 import os
+import re
+filter = re.compile(r'^RevBayes LnL:\s*(\S+)')
 vals = ['READ_MORPHO_AS_DNA', 'USE_GTR_RATE_MAT', 'USE_3_STATES', 'USE_TIME_TREE', 'USE_NUCLEOTIDE', 'USE_RATE_HET']
 short = ['DNA', 'GTR', '3', 'TIME', 'NUC', 'RATEHET']
 use3f = 1 << vals.index('USE_3_STATES')
@@ -47,12 +49,19 @@ while flag < MAX:
             check_flag <<= 1
         fo.write('''#endif
 ''')
-    print 'trying', tag[1:]
+    print 'trying', tag[1:], 'which is flag =', flag
     if run_serial_overwrite('make', 'build' + tag) != 0:
         sys.exit('Could not build' + tag[1:] + '\n')
     else:
-        if run_serial_overwrite(exe_path, 'testrun' + tag, cwd=test_exe_dir) != 0:
+        frag = 'testrun' + tag
+        if run_serial_overwrite(exe_path, frag, cwd=test_exe_dir) != 0:
             sys.exit('Test run failed for' + tag[1:] + '\n')
+        test_out = frag + 'stdout'
+        with open(test_out, 'rU') as fo:
+            for line in fo:
+                m = filter.match(line)
+                if m:
+                    print m.group(1)
     if user_spec:
         sys.exit(0)
     flag += 1
