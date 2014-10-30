@@ -5,6 +5,7 @@
 //  Created by Sebastian Hoehna on 7/11/12.
 //  Copyright 2012 __MyCompanyName__. All rights reserved.
 //
+#include "TestingDefs.h"
 
 #include "BranchLengthTree.h"
 #include "ConstantNode.h"
@@ -36,7 +37,6 @@
 */
 #include "Tree.h"
 #include "TreeTrace.h"
-
 #ifdef USE_LIB_ARMADILLO
 #include "TestAdmixtureGraph.h"
 #endif
@@ -60,9 +60,6 @@ Test::Test(int c, const char* v[]) : argc(c), argv(v)
 Test::~Test() {
     
 }
-
-//#define READ_MORPHO_AS_DNA
-
 
 bool Test::performTests(int argc, const char * argv[]) {
     time_t start,end;

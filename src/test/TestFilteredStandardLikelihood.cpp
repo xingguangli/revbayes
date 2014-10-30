@@ -1,3 +1,4 @@
+#include "TestingDefs.h"
 #include "ConstantNode.h"
 #include "DeterministicNode.h"
 #include "FilteredPhyloCTMCSiteHomogeneous.h"
@@ -33,11 +34,6 @@ TestFilteredStandardLikelihood::TestFilteredStandardLikelihood(const std::string
 TestFilteredStandardLikelihood::~TestFilteredStandardLikelihood() {
 }
 
-//#define USE_GTR_RATE_MAT
-//#define USE_3_STATES
-//#define USE_TIME_TREE
-//#define USE_NUCLEOTIDE
-#define USE_RATE_HET
 
 bool TestFilteredStandardLikelihood::run( void ) {
     std::cerr << "  starting TestFilteredStandardLikelihood...\n" ;
@@ -46,7 +42,7 @@ bool TestFilteredStandardLikelihood::run( void ) {
     NclReader& reader = NclReader::getInstance();
     std::vector<AbstractCharacterData*> data = reader.readMatrices(alignmentFilename);
     AbstractDiscreteCharacterData * discrD = dynamic_cast<AbstractDiscreteCharacterData *>(data[0]);
-#   if USE_TIME_TREE
+#   if defined(USE_TIME_TREE)
         std::vector<TimeTree*> trees = NclReader::getInstance().readTimeTrees( treeFilename );
         ConstantNode<TimeTree> *tau = new ConstantNode<TimeTree>( "tau", new TimeTree( *trees[0] ) );
 #   else
@@ -99,7 +95,7 @@ bool TestFilteredStandardLikelihood::run( void ) {
 #           endif
 #       else
 #           if defined(USE_TIME_TREE)
-                PhyloCTMCSiteHomogeneous<DnaState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneous<DnaState, TimeTree>(tau, false, numChar);
+                PhyloCTMCSiteHomogeneous<DnaState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneous<DnaState, TimeTree>(tau, 4, false, numChar);
 #           else
                 PhyloCTMCSiteHomogeneous<DnaState, BranchLengthTree> *charModel = new PhyloCTMCSiteHomogeneous<DnaState, BranchLengthTree>(tau, 4, false, numChar );
 #           endif
@@ -120,7 +116,7 @@ bool TestFilteredStandardLikelihood::run( void ) {
 #           endif
 #       else
 #          if defined(USE_TIME_TREE)
-                PhyloCTMCSiteHomogeneous<StandardState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneous<StandardState, TimeTree>(tau, true, numChar);
+                PhyloCTMCSiteHomogeneous<StandardState, TimeTree> *charModel = new PhyloCTMCSiteHomogeneous<StandardState, TimeTree>(tau, 4, false, numChar);
 #           else
                 PhyloCTMCSiteHomogeneous<StandardState, BranchLengthTree> *charModel = new PhyloCTMCSiteHomogeneous<StandardState, BranchLengthTree>(tau, 
 #                                                                                                               if defined(USE_3_STATES)
