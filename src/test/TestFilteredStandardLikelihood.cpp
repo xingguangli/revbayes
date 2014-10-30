@@ -54,12 +54,12 @@ bool TestFilteredStandardLikelihood::run( void ) {
     size_t numChar = discrD->getNumberOfCharacters();
 
 #   if defined(USE_RATE_HET)
-		ConstantNode<double>* shape = new ConstantNode<double>("alpha", new double(0.5) );
-		ConstantNode<double>* rate = new ConstantNode<double>("", new double(0.5) );
-		ConstantNode<int>* numCats = new ConstantNode<int>("ncat", new int(4) );
+        ConstantNode<double>* shape = new ConstantNode<double>("alpha", new double(0.5) );
+        ConstantNode<double>* rate = new ConstantNode<double>("", new double(0.5) );
+        ConstantNode<int>* numCats = new ConstantNode<int>("ncat", new int(4) );
 
-		DiscretizeGammaFunction *dFunc = new DiscretizeGammaFunction( shape, rate, numCats, false );
-		DeterministicNode<RbVector<double> > *site_rates_norm_2 = new DeterministicNode<RbVector<double> >( "site_rates_norm", dFunc );
+        DiscretizeGammaFunction *dFunc = new DiscretizeGammaFunction( shape, rate, numCats, false );
+        DeterministicNode<RbVector<double> > *site_rates_norm_2 = new DeterministicNode<RbVector<double> >( "site_rates_norm", dFunc );
         std::cout << "rates:\t" << site_rates_norm_2->getValue() << std::endl;
 #   endif
 
