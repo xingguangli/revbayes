@@ -4,8 +4,8 @@ import sys
 import os
 import re
 filter = re.compile(r'^RevBayes LnL:\s*(\S+)')
-vals = ['READ_MORPHO_AS_DNA', 'USE_GTR_RATE_MAT', 'USE_3_STATES', 'USE_TIME_TREE', 'USE_NUCLEOTIDE', 'USE_RATE_HET']
-short = ['DNA', 'GTR', '3', 'TIME', 'NUC', 'RATEHET']
+vals = ['READ_MORPHO_AS_DNA', 'USE_GTR_RATE_MAT', 'USE_TIME_TREE', 'USE_NUCLEOTIDE', 'USE_3_STATES', 'USE_RATE_HET']
+short = ['DNA', 'GTR', 'TIME', 'NUC', '3', 'RATEHET']
 use3f = 1 << vals.index('USE_3_STATES')
 incompatf = (1 << vals.index('USE_GTR_RATE_MAT')) + (1 << vals.index('USE_NUCLEOTIDE'))
 MAX = 1 << len(vals)
