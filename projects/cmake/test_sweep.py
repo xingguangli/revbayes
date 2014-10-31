@@ -17,7 +17,6 @@ def run_serial_overwrite(cmd, out_tag, cwd=None):
 abs_cur = os.path.abspath('.')
 par = os.path.split(abs_cur)[0]
 grand_par = os.path.split(par)[0]
-print grand_par
 exe_path = os.path.join(abs_cur, 'testrb')
 test_exe_dir = os.path.join(grand_par, 'examples')
 if len(sys.argv) > 1:
@@ -26,6 +25,8 @@ if len(sys.argv) > 1:
 else:
     flag = 0
     user_spec = False
+RUN_IN_GDB = '-d' in sys.argv
+
 while flag < MAX:
     if (flag & use3f) and (flag & incompatf):
         if user_spec:
@@ -54,8 +55,12 @@ while flag < MAX:
         sys.exit('Could not build' + tag[1:] + '\n')
     else:
         frag = 'testrun' + tag
-        if run_serial_overwrite(exe_path, frag, cwd=test_exe_dir) != 0:
-            sys.exit('Test run failed for' + tag[1:] + '\n')
+        if RUN_IN_GDB:
+            proc = subprocess.Popen(['gdb', exe_path], cwd=test_exe_dir, shell=True)
+            sys.exit(proc.wait())
+        else:
+            if run_serial_overwrite(exe_path, frag, cwd=test_exe_dir) != 0:
+                sys.exit('Test run failed for' + tag[1:] + '\n')
         test_out = frag + 'stdout'
         with open(test_out, 'rU') as fo:
             for line in fo:
