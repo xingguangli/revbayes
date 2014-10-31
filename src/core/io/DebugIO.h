@@ -62,11 +62,11 @@ inline void debug_value(const char * pref, const T &x) {
 #else
 
 template<typename T>
-inline void debug_bool_vec_flf(const char *filename, const size_t line_num, const char * func_name, const char * pref, const std::vector<bool> &v) {
+inline void debug_bool_vec_flf(const char *, const size_t , const char * , const char * , const std::vector<bool> &) {
 }
 
 template<typename T>
-inline void debug_vec_flf(const char *filename, const size_t line_num, const char * func_name, const char * , const T *, size_t){
+inline void debug_vec_flf(const char *, const size_t , const char * , const char * , const T *, size_t){
 }
 
 template<typename T>

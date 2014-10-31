@@ -385,8 +385,8 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType, treeType>::compres
         }
         siteIndex++;
     }
-    debug_value("treatAmbiguousAsGaps", treatAmbiguousAsGaps);
-    debug_value("treatUnknownAsGap", treatUnknownAsGap);
+    //debug_value("treatAmbiguousAsGaps", treatAmbiguousAsGaps);
+    //debug_value("treatUnknownAsGap", treatUnknownAsGap);
     
     // check whether there are ambiguous characters (besides gaps)
     bool ambiguousCharacters = false;
@@ -430,7 +430,7 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType, treeType>::compres
     
     // set the global variable if we use ambiguous characters
     usingAmbiguousCharacters = ambiguousCharacters;
-    debug_value("usingAmbiguousCharacters", usingAmbiguousCharacters);
+    //debug_value("usingAmbiguousCharacters", usingAmbiguousCharacters);
     
     std::vector<bool> unique(numSites, true);
     // compress the character matrix if we're asked to
