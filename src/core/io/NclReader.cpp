@@ -638,11 +638,10 @@ DiscreteCharacterData<StandardState>* NclReader::createStandardMatrix(NxsCharact
             if ( charblock->IsGapState(origTaxIndex, *cit) == true )
             {
                 stdState.setGapState(true);
-                stdState.setState('-');
             }
             else if (charblock->IsMissingState(origTaxIndex, *cit) == true)
             {
-                stdState.setState('?');
+                stdState.setMissing();
             }
             else
                 for(unsigned int s=0; s<charblock->GetNumStates(origTaxIndex, *cit); s++)
