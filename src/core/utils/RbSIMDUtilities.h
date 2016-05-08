@@ -20,8 +20,6 @@
 #ifdef SINGLE_PRECISION
     typedef float RealNumber;
 #else
-#ifdef SIMD_ENABLED
-#endif
     typedef double RealNumber;
 #endif
     
@@ -101,6 +99,8 @@ inline SIMDRegister SIMD_LOG(SIMDRegister& inreg)
     {
         out[i] = log(in[i]);
     }
+
+    return outreg;
 }
 #endif
     
