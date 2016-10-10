@@ -2,6 +2,7 @@
 #include "CharacterState.h"
 #include "NexusWriter.h"
 #include "RbFileManager.h"
+#include "TaxonMapFactory.h"
 
 using namespace RevBayesCore;
 
@@ -164,15 +165,19 @@ void NexusWriter::writeNexusBlock(const ContinuousCharacterData &data)
 void NexusWriter::writeNexusBlock(const Clade &c) 
 {
     
-    const std::vector<Taxon>& labels = c.getTaxa();
+    RbPtr<TaxonMap> labels = GLOBAL_TAXON_MAP;
+    RbBitSet bits = c.getBitRepresentation();
     
     outStream << std::endl;
     outStream << "\tBegin taxa;" << std::endl;
     outStream << "\tDimensions ntax=" << c.size() << ";" << std::endl;;
     outStream << "\tTaxlabels" << std::endl;
-    for (std::vector<Taxon>::const_iterator it = labels.begin(); it != labels.end(); ++it)
+    for (size_t i=0; i<labels->size(); ++i)
     {
-        outStream << "\t\t" << it->getName() << std::endl;
+        if ( bits.isSet(i) == true )
+        {
+            outStream << "\t\t" << labels->getTaxon(i).getName() << std::endl;
+        }
     }
     outStream << "\t\t;" << std::endl;
     outStream << "End;" << std::endl;

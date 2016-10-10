@@ -1,5 +1,6 @@
 #include "NewickConverter.h"
 #include "RbException.h"
+#include "TaxonMapFactory.h"
 #include "TopologyNode.h"
 #include "Tree.h"
 
@@ -71,6 +72,8 @@ Tree* NewickConverter::convertFromNewick(std::string const &n)
     // this is important for fossil trees which have sampled ancestors
     //t->makeInternalNodesBifurcating();  JPH commented this out. The tree reader should be general and not make a bifurcating tree so early
     
+    GLOBAL_TAXON_MAP->addTaxa( *t );
+    
     // return the tree, the caller is responsible for destruction
     return t;
 }
@@ -128,7 +131,9 @@ Tree* NewickConverter::convertFromNewickNoReIndexing(const std::string &n)
     // make all internal nodes bifurcating
     // this is important for fossil trees which have sampled ancestors
    // t->makeInternalNodesBifurcating();  JPH commented this out. The tree reader should be general and not make a bifurcating tree so early
-	
+    
+    GLOBAL_TAXON_MAP->addTaxa( *t );
+    
     // return the tree, the caller is responsible for destruction
     return t;
 }

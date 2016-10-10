@@ -8,6 +8,7 @@
 #include "RbMathCombinatorialFunctions.h"
 #include "StochasticNode.h"
 #include "Taxon.h"
+#include "TaxonMapFactory.h"
 #include "TopologyNode.h"
 #include "TreeUtilities.h"
 
@@ -244,9 +245,9 @@ Tree* TopologyConstrainedTreeDistribution::simulateTree( void )
         {
             for (size_t k = 0; k < num_taxa; k++)
             {
-                if ( taxa[k].getName() == constraints[i].getTaxonName(j) )
+                if ( taxa[k].getName() == constraints[i].getTaxon(j).getName() )
                 {
-                    constraints[i].setTaxonAge(j, taxa[k].getAge());
+                    constraints[i].getTaxon(j).setAge(taxa[k].getAge());
                     break;
                 }
             }
@@ -389,7 +390,7 @@ Tree* TopologyConstrainedTreeDistribution::simulateTree( void )
         tree_base_distribution->simulateClade(nodes_in_clade, clade_age, max_age);
         nodes.push_back( nodes_in_clade[0] );
         
-        std::vector<Taxon> v_taxa;
+        RbBitSet v_taxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
         nodes_in_clade[0]->getTaxa(v_taxa);
         Clade new_clade = Clade(v_taxa);
         new_clade.setAge( nodes_in_clade[0]->getAge() );

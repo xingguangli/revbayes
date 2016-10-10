@@ -83,8 +83,6 @@ namespace RevBayesCore {
         bool                                        containsClade(const TopologyNode* c, bool strict) const;
         bool                                        containsClade(const Clade &c, bool strict) const;
         bool                                        containsClade(const RbBitSet &c, bool strict) const;
-//        bool                                        containsClade(const TopologyNode* c) const;
-//        bool                                        containsClade(const Clade &c) const;
         double                                      getAge(void) const;                                                                 //!< Get the age (time ago from present) for this node
         const std::vector<std::string>&             getBranchParameters(void) const;                                                        //!< Get the branch length leading towards this node
         double                                      getBranchLength(void) const;                                                        //!< Get the branch length leading towards this node
@@ -99,21 +97,16 @@ namespace RevBayesCore {
         const std::string&                          getName() const;                                                                    //!< Get name of node
         const std::vector<std::string>&             getNodeParameters(void) const;                                                      //!< Get the branch length leading towards this node
         size_t                                      getNumberOfChildren(void) const;                                                    //!< Returns the number of children
-        size_t                                      getNumberOfNodesInSubtree(bool tips) const;   
-        
-     // std::string                                 getNodeField(std::string key) const;
-     // size_t                                      getNodeFieldNumber() const;
-        
-        //!< Get the number of nodes contained in this subtree.
+        size_t                                      getNumberOfNodesInSubtree(bool tips) const;                                         //!< Get the number of nodes contained in this subtree.
         TopologyNode&                               getParent(void);                                                                    //!< Returns the node's parent
         const TopologyNode&                         getParent(void) const;                                                              //!< Returns the node's parent
         std::string                                 getSpeciesName() const;                                                             //!< Get the species name for the node
-        void                                        getTaxa(std::vector<Taxon> &taxa) const;                                            //!< Fill the vector of taxa
-        void                                        getTaxa(RbBitSet &taxa) const;                                            //!< Fill the vector of taxa
+//        void                                        getTaxa(std::vector<Taxon> &taxa) const;                                            //!< Fill the vector of taxa
+        void                                        getTaxa(RbBitSet &taxa) const;                                                      //!< Fill the vector of taxa
         const Taxon&                                getTaxon() const;                                                                   //!< Fill the vector of taxa
         double                                      getTmrca(const Clade &c) const;
         double                                      getTmrca(const TopologyNode &n) const;
-        double                                      getTmrca(const std::vector<Taxon> &t) const;
+        double                                      getTmrca(const RbBitSet &t) const;
         bool                                        isFossil(void) const;                                                               //!< Is node a fossil?
         bool                                        isInternal(void) const;                                                             //!< Is node internal?
         bool                                        isRoot(void) const;                                                                 //!< Is node root?
@@ -150,9 +143,10 @@ namespace RevBayesCore {
         std::vector<TopologyNode*>                  children;                                                                           //!< Vector holding the node's children. Note that the parent owns the children but not the other way around.
         TopologyNode*                               parent;                                                                             //!< Pointer to the parent of the node. It is a regular pointer instead of a super smart pointer to avoid loops in the reference counting.
         Tree*                                       tree;                                                                               //!< A pointer to the tree for convinience access
-        Taxon                                       taxon;                                                                              //!< Taxon of the node, i.e. identifier/taxon name, plus species it comes from
-        RbBitSet                                    taxon_index;
-        size_t                                      index;                                                                              //!< Node index
+//        Taxon                                       taxon;                                                                              //!< Taxon of the node, i.e. identifier/taxon name, plus species it comes from
+//        RbBitSet                                    taxon_index;
+        size_t                                      taxon_index;                                                                              //!< Node index
+        size_t                                      node_index;                                                                              //!< Node index
         bool                                        interior_node;
         bool                                        root_node;
         bool                                        tip_node;
@@ -162,11 +156,7 @@ namespace RevBayesCore {
         // information for newick representation
         std::vector<std::string>                    node_comments;
         std::vector<std::string>                    branch_comments;
-        
-//        RevLanguage::RevPtr<TaxonMap>               taxon_map;
-        
-     // std::map<std::string,std::string>           nodeFields;
-     // std::map<std::string,std::string>           branchFields;
+
     };
 }
 

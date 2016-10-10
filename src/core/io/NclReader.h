@@ -85,6 +85,7 @@ namespace RevBayesCore {
         
     private:
         
+        void                                                    checkCharacterDataTaxonIndices(const std::vector<AbstractCharacterData* > &d);  //!< Check and change the indices of the trees to match
         void                                                    checkTreeTaxonIndices( std::vector<Tree* >* trees );                            //!< Check and change the indices of the trees to match
         HomologousDiscreteCharacterData<AminoAcidState>*        createAminoAcidMatrix(NxsCharactersBlock* charblock);                           //!< Create an object to hold amino acid data
         ContinuousCharacterData*                                createContinuousMatrix(NxsCharactersBlock* charblock);                          //!< Create an object to hold continuous data

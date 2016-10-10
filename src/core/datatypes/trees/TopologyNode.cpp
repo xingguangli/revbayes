@@ -6,6 +6,7 @@
 #include "RbSettings.h"
 #include "RbUtil.h"
 #include "Taxon.h"
+#include "TaxonMapFactory.h"
 #include "TopologyNode.h"
 #include "Tree.h"
 
@@ -21,8 +22,8 @@ TopologyNode::TopologyNode(size_t indx) :
     children(),
     parent( NULL ),
     tree( NULL ),
-    taxon(""),
-    index(indx),
+    node_index(indx),
+    taxon_index( -1 ),
     interior_node( false ),
     root_node( true ),
     tip_node( true ),
@@ -40,8 +41,8 @@ TopologyNode::TopologyNode(const Taxon& t, size_t indx) :
     children(),
     parent( NULL ),
     tree( NULL ),
-    taxon(t),
-    index(indx),
+    node_index(indx),
+    taxon_index( GLOBAL_TAXON_MAP->getTaxonIndex(t) ),
     interior_node( false ),
     root_node( true ),
     tip_node( true ),
@@ -59,8 +60,8 @@ TopologyNode::TopologyNode(const std::string& n, size_t indx) :
     children(),
     parent( NULL ),
     tree( NULL ),
-    taxon(n),
-    index(indx),
+    node_index(indx),
+    taxon_index( GLOBAL_TAXON_MAP->getTaxonIndex( Taxon(n) ) ),
     interior_node( false ),
     root_node( true ),
     tip_node( true ),
@@ -76,8 +77,8 @@ TopologyNode::TopologyNode(const TopologyNode &n) :
     branch_length( n.branch_length ),
     parent( n.parent ),
     tree( NULL ),
-    taxon( n.taxon ),
-    index( n.index ),
+    node_index( n.node_index ),
+    taxon_index( n.taxon_index ),
     interior_node( n.interior_node ),
     root_node( n.root_node ),
     tip_node( n.tip_node ),
@@ -128,8 +129,8 @@ TopologyNode& TopologyNode::operator=(const TopologyNode &n)
         // copy the members
         age                     = n.age;
         branch_length           = n.branch_length;
-        taxon                   = n.taxon;
-        index                   = n.index;
+        node_index              = n.node_index;
+        taxon_index             = n.taxon_index;
         interior_node           = n.interior_node;
         tip_node                = n.tip_node;
         fossil                  = n.fossil;
@@ -194,7 +195,7 @@ void TopologyNode::addBranchParameters(std::string const &n, const std::vector<d
     if ( !internalOnly || !isTip()  )
     {
         std::stringstream o;
-        o << n << "=" << p[index];
+        o << n << "=" << p[node_index];
         std::string comment = o.str();
         branch_comments.push_back( comment );
         
@@ -211,7 +212,7 @@ void TopologyNode::addBranchParameters(std::string const &n, const std::vector<s
     
     if ( !internalOnly || !isTip()  )
     {
-        std::string comment = n + "=" + p[index];
+        std::string comment = n + "=" + p[node_index];
         branch_comments.push_back( comment );
         
         for (std::vector<TopologyNode*>::iterator it = children.begin(); it != children.end(); ++it)
@@ -291,7 +292,7 @@ void TopologyNode::addNodeParameters(std::string const &n, const std::vector<dou
     {
         std::stringstream o;
         char s[32];
-        snprintf(s, sizeof(s), "%f",p[index]);
+        snprintf(s, sizeof(s), "%f",p[node_index]);
         o << n << "=" << s; //SK
         std::string comment = o.str();
         node_comments.push_back( comment );
@@ -311,7 +312,7 @@ void TopologyNode::addNodeParameters(std::string const &n, const std::vector<std
     if ( !internalOnly || !isTip()  )
     {
         std::stringstream o;
-        o << n << "=" << *p[index];
+        o << n << "=" << *p[node_index];
         std::string comment = o.str();
         node_comments.push_back( comment );
         
@@ -337,7 +338,7 @@ std::string TopologyNode::buildNewickString( void )
     if ( tip_node == true )
     {
         // this is a tip so we just return the name of the node
-        o << taxon.getName();
+        o << GLOBAL_TAXON_MAP->getTaxon( taxon_index ).getName();
         
     }
     else
@@ -351,7 +352,7 @@ std::string TopologyNode::buildNewickString( void )
         
         if ( fossil == true )
         {
-            o << taxon.getName();
+            o << GLOBAL_TAXON_MAP->getTaxon( taxon_index ).getName();
         }
         
     }
@@ -365,7 +366,7 @@ std::string TopologyNode::buildNewickString( void )
         // first let us print the node index, we must increment by 1 to match RevLanguage indexing
         if ( RbSettings::userSettings().getPrintNodeIndex() == true )
         {
-            o << "index=" << index+1;
+            o << "index=" << node_index+1;
             needsComma = true;
         }
             
@@ -379,7 +380,7 @@ std::string TopologyNode::buildNewickString( void )
             needsComma = true;
         }
             
-        //Finally let's print the species name (always)
+        //Finally let's print the species name
 //        if ( needsComma == true )
 //        {
 //            o << ",";
@@ -476,7 +477,7 @@ std::string TopologyNode::computePlainNewick( void ) const
     if ( tip_node == true )
     {
         // this is a tip so we just return the name of the node
-        return taxon.getName();
+        return GLOBAL_TAXON_MAP->getTaxon( taxon_index ).getName();
     }
     else
     {
@@ -593,13 +594,13 @@ bool TopologyNode::equals(const TopologyNode& node) const
     }
     
     // test if the name is the same
-    if (taxon != node.taxon)
+    if (taxon_index != node.taxon_index)
     {
         return false;
     }
     
     // test if the index is the same
-    if (index != node.index)
+    if (node_index != node.node_index)
     {
         return false;
     }
@@ -723,7 +724,7 @@ size_t TopologyNode::getCladeIndex(const TopologyNode *c) const
     
     // so the clade must be contained in my clade
     // just return my index
-    return index;
+    return node_index;
 }
 
 
@@ -767,7 +768,7 @@ std::vector<int> TopologyNode::getChildrenIndices() const
 Clade TopologyNode::getClade( void ) const
 {
     
-    std::vector<Taxon> taxa;
+    RbBitSet taxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
     getTaxa( taxa );
     
     Clade c = Clade( taxa );
@@ -780,7 +781,7 @@ Clade TopologyNode::getClade( void ) const
 size_t TopologyNode::getIndex( void ) const
 {
     
-    return index;
+    return node_index;
 }
 
 
@@ -882,28 +883,28 @@ const TopologyNode& TopologyNode::getParent(void) const
 
 std::string TopologyNode::getSpeciesName() const
 {
-    std::string name = taxon.getSpeciesName();
+    std::string name = GLOBAL_TAXON_MAP->getTaxon( taxon_index ).getSpeciesName();
     return name;
 }
 
 
-void TopologyNode::getTaxa(std::vector<Taxon> &taxa) const
-{
-    
-    if ( isTip() )
-    {
-        taxa.push_back( taxon );
-    }
-    else
-    {
-        for ( std::vector<TopologyNode* >::const_iterator i=children.begin(); i!=children.end(); i++ )
-        {
-            (*i)->getTaxa( taxa );
-        }
-    }
-
-    
-}
+//void TopologyNode::getTaxa(std::vector<Taxon> &taxa) const
+//{
+//    
+//    if ( isTip() )
+//    {
+//        taxa.push_back( taxon );
+//    }
+//    else
+//    {
+//        for ( std::vector<TopologyNode* >::const_iterator i=children.begin(); i!=children.end(); i++ )
+//        {
+//            (*i)->getTaxa( taxa );
+//        }
+//    }
+//
+//    
+//}
 
 
 void TopologyNode::getTaxa(RbBitSet &taxa) const
@@ -911,7 +912,7 @@ void TopologyNode::getTaxa(RbBitSet &taxa) const
     
     if ( isTip() == true )
     {
-        taxa.set( index );
+        taxa.set( taxon_index );
     }
     else
     {
@@ -927,56 +928,47 @@ void TopologyNode::getTaxa(RbBitSet &taxa) const
 
 const Taxon& TopologyNode::getTaxon() const
 {
-    return taxon;
+    return GLOBAL_TAXON_MAP->getTaxon( taxon_index );
 }
 
 
 double TopologyNode::getTmrca(const Clade &c) const
 {
-    const std::vector<Taxon>& yourTaxa = c.getTaxa();
+    const RbBitSet& your_taxa = c.getBitRepresentation();
     
-    return getTmrca( yourTaxa );
+    return getTmrca( your_taxa );
 }
 
 
 double TopologyNode::getTmrca(const TopologyNode &n) const
 {
-    std::vector<Taxon> yourTaxa;
-    n.getTaxa( yourTaxa );
+    RbBitSet your_taxa;
+    n.getTaxa( your_taxa );
     
-    return getTmrca( yourTaxa );
+    return getTmrca( your_taxa );
 }
 
-double TopologyNode::getTmrca(const std::vector<Taxon> &yourTaxa) const
+double TopologyNode::getTmrca(const RbBitSet &your_taxa) const
 {
     
-    std::vector<Taxon> myTaxa;
-    getTaxa( myTaxa );
+    RbBitSet my_taxa;
+    getTaxa( my_taxa );
     
-    if ( myTaxa.size() < yourTaxa.size() )
+    if ( my_taxa.size() != your_taxa.size() || my_taxa.getNumberSetBits() < your_taxa.getNumberSetBits() )
     {
         return -1;
     }
     
-    for (std::vector<Taxon>::const_iterator y_it = yourTaxa.begin(); y_it != yourTaxa.end(); ++y_it)
+    for (size_t i=0; i<my_taxa.size(); ++i)
     {
-        bool found = false;
-        for (std::vector<Taxon>::const_iterator it = myTaxa.begin(); it != myTaxa.end(); ++it)
-        {
-            if ( *y_it == *it )
-            {
-                found = true;
-                break;
-            }
-        }
         
-        if (!found)
+        if ( your_taxa.isSet(i) == true && my_taxa.isSet(i) == false )
         {
             return -1;
         }
     }
     
-    if ( myTaxa.size() == yourTaxa.size() )
+    if ( my_taxa.getNumberSetBits() == your_taxa.getNumberSetBits() )
     {
         return getAge();
     }
@@ -986,7 +978,7 @@ double TopologyNode::getTmrca(const std::vector<Taxon> &yourTaxa) const
         bool contains = false;
         for (std::vector<TopologyNode*>::const_iterator it = children.begin(); it != children.end(); ++it)
         {
-            double child_tmrca = (*it)->getTmrca( yourTaxa );
+            double child_tmrca = (*it)->getTmrca( your_taxa );
             contains |= ( child_tmrca >= 0.0 );
             if ( contains == true )
             {
@@ -996,6 +988,7 @@ double TopologyNode::getTmrca(const std::vector<Taxon> &yourTaxa) const
         }
         return tmrca;
     }
+    
 }
 
 
@@ -1059,7 +1052,6 @@ void TopologyNode::makeBifurcating( void )
             {
                 
                 TopologyNode *new_fossil = new TopologyNode( getTaxon() );
-                taxon = Taxon("");
                 
                 // connect to the old fossil
                 addChild( new_fossil );
@@ -1121,8 +1113,6 @@ void TopologyNode::removeAllChildren(void)
         // free the memory
         delete the_node;
     }
-    
-    taxon = Taxon("");
     
     tip_node = true;
     interior_node = false;
@@ -1252,15 +1242,23 @@ void TopologyNode::setFossil(bool tf)
 void TopologyNode::setIndex( size_t idx)
 {
     
-    index = idx;
+    node_index = idx;
     
 }
 
-void TopologyNode::setName(std::string const &n)
+void TopologyNode::setName(const std::string &n)
 {
     
-    taxon.setName( n );
-    taxon.setSpeciesName( n );
+    Taxon t = Taxon(n);
+    t.setSpeciesName( n );
+    if ( GLOBAL_TAXON_MAP->hasTaxon( t ) == false )
+    {
+        taxon_index = GLOBAL_TAXON_MAP->addTaxon( t );
+    }
+    else
+    {
+        taxon_index = GLOBAL_TAXON_MAP->getTaxonIndex( t );
+    }
     
 }
 
@@ -1277,7 +1275,7 @@ void TopologyNode::setNodeType(bool tip, bool root, bool interior)
 void TopologyNode::setSpeciesName(std::string const &n)
 {
     
-    taxon.setSpeciesName( n );
+    GLOBAL_TAXON_MAP->getTaxon( taxon_index ).setSpeciesName( n );
     
 }
 
@@ -1285,7 +1283,7 @@ void TopologyNode::setSpeciesName(std::string const &n)
 void TopologyNode::setTaxon(Taxon const &t)
 {
     
-    taxon = t;
+    taxon_index = GLOBAL_TAXON_MAP->getTaxonIndex( t );
     
 }
 
@@ -1296,8 +1294,8 @@ void TopologyNode::setTaxonIndices(const TaxonMap &tm)
     
     if ( isTip() == true )
     {
-        size_t idx = tm.getTaxonIndex( taxon );
-        index = idx;
+//        size_t idx = tm.getTaxonIndex( taxon );
+        node_index = taxon_index;
     }
     else
     {

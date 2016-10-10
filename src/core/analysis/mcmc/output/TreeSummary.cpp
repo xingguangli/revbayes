@@ -6,6 +6,7 @@
 #include "RbVectorUtilities.h"
 #include "Sample.h"
 #include "StringUtilities.h"
+#include "TaxonMapFactory.h"
 #include "TopologyNode.h"
 #include "TreeSummary.h"
 
@@ -1352,7 +1353,7 @@ void TreeSummary::annotateHPDAges(Tree &tree, double hpd )
     for (size_t i = 0; i < nodes.size(); i++)
     {
         // first get all the node ages for this node and sort them
-        std::vector<Taxon> taxa;
+        RbBitSet taxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
         nodes[i]->getTaxa(taxa);
         Clade c(taxa); // clade age not used here
         std::map<Clade, std::vector<double> >::iterator entry_clade_age = cladeAges.find( c );
@@ -1409,7 +1410,7 @@ void TreeSummary::annotateTree(RevBayesCore::Tree &reference_tree, bool clock)
         if ( n->isTip() == false || clock == false )
         {
             // first we compute the posterior probability of the clade
-            std::vector<Taxon> taxa;
+            RbBitSet taxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
             n->getTaxa(taxa);
             Clade c( taxa );
             
@@ -1421,7 +1422,7 @@ void TreeSummary::annotateTree(RevBayesCore::Tree &reference_tree, bool clock)
             double ccp = 1.0;
             if ( n->isRoot() == false )
             {
-                std::vector<Taxon> parentTaxa;
+                RbBitSet parentTaxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
                 n->getParent().getTaxa(parentTaxa);
                 Clade parent( parentTaxa);
                 std::map<Clade, std::vector<double> >& condCladeFreqs = conditionalCladeFrequencies[parent];
@@ -1470,7 +1471,7 @@ TopologyNode* TreeSummary::assembleConsensusTopology(std::vector<TopologyNode*> 
         if (cladeFreq < cutoff)  break;
         
         Clade clade = cladeSamples[rIndex].getValue();
-        std::vector<Taxon> intNodeTaxa = clade.getTaxa();
+        RbBitSet intNodeTaxa = clade.getBitRepresentation();
         
         //make sure we have an internal node
         if (intNodeTaxa.size() == 1 || intNodeTaxa.size() == tipNames.size())  continue;
@@ -1480,7 +1481,7 @@ TopologyNode* TreeSummary::assembleConsensusTopology(std::vector<TopologyNode*> 
         intNode->setNodeType(false, false, true);
         
         //find parent node
-        Taxon firstTaxon = intNodeTaxa.at(0);
+        Taxon firstTaxon = clade.getTaxon(0);
         TopologyNode* parentNode = NULL;
         bool isCompatible = true;
         
@@ -1492,9 +1493,10 @@ TopologyNode* TreeSummary::assembleConsensusTopology(std::vector<TopologyNode*> 
                 break;
             }
         }
+        
         while (parentNode != NULL)
         {
-            std::vector<Taxon> subtendedTaxa;
+            RbBitSet subtendedTaxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
             parentNode->getTaxa(subtendedTaxa);
             if (subtendedTaxa.size() >= intNodeTaxa.size())
             {
@@ -1508,7 +1510,8 @@ TopologyNode* TreeSummary::assembleConsensusTopology(std::vector<TopologyNode*> 
                             inBoth++;
                     }
                 }
-                if (inBoth != intNodeTaxa.size()) {
+                if (inBoth != intNodeTaxa.size())
+                {
                     isCompatible = false;
                 }
                 
@@ -1532,7 +1535,7 @@ TopologyNode* TreeSummary::assembleConsensusTopology(std::vector<TopologyNode*> 
         for (size_t k = 0; k < children.size(); k++)
         {
             childNode = children[k];
-            std::vector<Taxon> childTaxa;
+            RbBitSet childTaxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
             int found = 0;
             childNode->getTaxa(childTaxa);
             
@@ -1591,9 +1594,11 @@ TopologyNode* TreeSummary::assembleConsensusTopology(std::vector<TopologyNode*> 
 void TreeSummary::calculateMedianAges(TopologyNode* n, double parentAge, std::vector<double> *ages)
 {
     if (cladeAges.size() < 1)
+    {
         return;
+    }
     
-    std::vector<Taxon> taxa;
+    RbBitSet taxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
     n->getTaxa(taxa);
     Clade c (taxa);
     c.setAge( n->getAge() );
@@ -1695,7 +1700,7 @@ Tree* TreeSummary::conTree(double cutoff)
 //filling in clades and clade ages - including tip nodes in clade sample - to get age for serially sampled tips in time trees
 Clade TreeSummary::fillClades(const TopologyNode &n, std::vector<Clade> &clades, bool clock)
 {
-    std::vector<Taxon> taxa;
+    RbBitSet taxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
     n.getTaxa(taxa);
     Clade parentClade( taxa );
     parentClade.setAge( (clock == true ? n.getAge() : n.getBranchLength() ) );
@@ -1717,7 +1722,7 @@ Clade TreeSummary::fillClades(const TopologyNode &n, std::vector<Clade> &clades,
 Clade TreeSummary::fillConditionalClades(const TopologyNode &n, std::vector<ConditionalClade> &condClades, std::vector<Clade> &clades, bool clock)
 {
     
-    std::vector<Taxon> taxa;
+    RbBitSet taxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
     n.getTaxa(taxa);
     
     double a = 0;
@@ -1953,8 +1958,8 @@ Tree* TreeSummary::map( bool clock )
     }
     size_t num_taxa = best_tree->getNumberOfTips();
     
-    TaxonMap tm = TaxonMap( trace.objectAt(0) );
-    best_tree->setTaxonIndices( tm );
+//    TaxonMap tm = TaxonMap( trace.objectAt(0) );
+//    best_tree->setTaxonIndices( tm );
 
     // now we summarize the clades for the best tree
     summarizeCladesForTree(*best_tree, clock);
@@ -1988,7 +1993,7 @@ Tree* TreeSummary::map( bool clock )
         if ( n->isTip() == false || clock == false )
         {
             // first we compute the posterior probability of the clade
-            std::vector<Taxon> taxa;
+            RbBitSet taxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
             n->getTaxa(taxa);
             Clade c( taxa );
             
@@ -2001,7 +2006,7 @@ Tree* TreeSummary::map( bool clock )
             double age = 0.0;
             if ( !n->isRoot() )
             {
-                std::vector<Taxon> parentTaxa;
+                RbBitSet parentTaxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
                 n->getParent().getTaxa(parentTaxa);
                 Clade parent( parentTaxa );
                 std::map<Clade, std::vector<double> >& condCladeFreqs = conditionalCladeFrequencies[parent];

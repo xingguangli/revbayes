@@ -11,6 +11,7 @@
 #include "StandardState.h"
 #include "StringUtilities.h"
 #include "TaxonMap.h"
+#include "TaxonMapFactory.h"
 #include "Tree.h"
 #include "TopologyNode.h"
 #include "Tree.h"
@@ -35,13 +36,49 @@ NclReader::NclReader( const NclReader &r ) :
 
 
 //!< Check and change the indices of the trees to match
+void NclReader::checkCharacterDataTaxonIndices(const std::vector<AbstractCharacterData* > &d)
+{
+    RbPtr<TaxonMap> tm = GLOBAL_TAXON_MAP;
+    for (size_t i=0; i<d.size(); ++i)
+    {
+        AbstractCharacterData *t = d[i];
+        tm->addTaxa( *t );
+    }
+        
+    
+//    Tree *reference_tree = (*trees)[0];
+//    TaxonMap tm = TaxonMap( *reference_tree );
+//    for (size_t i=1; i<trees->size(); ++i)
+//    {
+//        Tree *t = (*trees)[i];
+//        t->setTaxonIndices( tm );
+//    }
+    
+}
+
+
+//!< Check and change the indices of the trees to match
 void NclReader::checkTreeTaxonIndices( std::vector<Tree* >* trees )
 {
     
     // check for NULL pointer
-    if ( trees != NULL && trees->size() > 1 )
+    if ( trees != NULL )
     {
         
+        RbPtr<TaxonMap> tm = GLOBAL_TAXON_MAP;
+        for (size_t i=0; i<trees->size(); ++i)
+        {
+            Tree *t = (*trees)[i];
+            tm->addTaxa( *t );
+        }
+        
+    }
+    
+    
+    // check for NULL pointer
+    if ( trees != NULL && trees->size() > 1 )
+    {
+    
         Tree *reference_tree = (*trees)[0];
         TaxonMap tm = TaxonMap( *reference_tree );
         for (size_t i=1; i<trees->size(); ++i)
@@ -1190,16 +1227,25 @@ std::vector<AbstractCharacterData*> NclReader::readMatrices(const std::string &f
     // are we reading a single file or are we reading the contents of a directory?
     bool readingDirectory = false;
     if ( myFileManager.getFilePath() != "" && myFileManager.getFileName() == "")
+    {
         readingDirectory = true;
+    }
+    
     if (readingDirectory == true)
+    {
         RBOUT( "Recursively reading the contents of a directory\n" );
+    }
     else
+    {
         RBOUT( "Attempting to read the contents of file \"" + myFileManager.getFileName() + "\"\n" );
+    }
     
     // set up a vector of strings containing the name or names of the files to be read
     std::vector<std::string> vectorOffile_names;
     if (readingDirectory == true)
+    {
         myFileManager.setStringWithNamesOfFilesInDirectory(vectorOffile_names);
+    }
     else
     {
 #       if defined (RB_WIN)
@@ -1233,11 +1279,17 @@ std::vector<AbstractCharacterData*> NclReader::readMatrices(const std::string &f
         bool is_interleaved = false;
         std::string myFileType = "unknown", dType = "unknown";
         if (isNexusFile(*p) == true)
+        {
             myFileType = "nexus";
+        }
         else if (isPhylipFile(*p, dType, is_interleaved) == true)
+        {
             myFileType = "phylip";
+        }
         else if (isFastaFile(*p, dType) == true)
+        {
             myFileType = "fasta";
+        }
         
         if (myFileType != "unknown")
         {
@@ -1245,14 +1297,23 @@ std::vector<AbstractCharacterData*> NclReader::readMatrices(const std::string &f
             if ( myFileType == "phylip" )
             {
                 if (is_interleaved == true)
+                {
                     suffix += "|interleaved";
+                }
                 else
+                {
                     suffix += "|noninterleaved";
+                }
+                
             }
             else if ( myFileType == "fasta" )
+            {
                 suffix += "|noninterleaved";
+            }
             else
+            {
                 suffix += "|unknown";
+            }
             myFileType += suffix;
             fileMap.insert( std::make_pair(*p,myFileType) );
         }
@@ -1271,33 +1332,52 @@ std::vector<AbstractCharacterData*> NclReader::readMatrices(const std::string &f
     {
         std::stringstream o2;
         if ( m.size() == 0 )
+        {
             o2 << "Failed to read any files";
+        }
         else if ( m.size() == 1 )
+        {
             o2 << "Successfully read one file";
+        }
         else
+        {
             o2 << "Successfully read " << m.size() << " files";
+        }
         RBOUT( o2.str() );
         std::set<std::string> myWarnings = getWarnings();
         if ( vectorOffile_names.size() - m.size() > 0 && myWarnings.size() > 0 )
         {
             std::stringstream o3;
             if (vectorOffile_names.size() - m.size() == 1)
+            {
                 o3 << "Did not read a file for the following ";
+            }
             else
+            {
                 o3 << "Did not read " << vectorOffile_names.size() - m.size() << " files for the following ";
+            }
+            
             if (myWarnings.size() == 1)
+            {
                 o3 << "reason:";
+            }
             else
+            {
                 o3 << "reasons:";
+            }
             RBOUT( o3.str() );
             for (std::set<std::string>::iterator it = myWarnings.begin(); it != myWarnings.end(); it++)
+            {
                 RBOUT( "* "+(*it) );
+            }
         }
     }
     else
     {
         if (m.size() > 0)
+        {
             RBOUT( "Successfully read file" );
+        }
         else
         {
             std::set<std::string> myWarnings = getWarnings();
@@ -1306,15 +1386,23 @@ std::vector<AbstractCharacterData*> NclReader::readMatrices(const std::string &f
                 std::stringstream o3;
                 o3 << "Did not read the file for the following ";
                 if (myWarnings.size() == 1)
+                {
                     o3 << "reason:";
+                }
                 else
+                {
                     o3 << "reasons:";
+                }
                 RBOUT( o3.str() );
                 for (std::set<std::string>::iterator it = myWarnings.begin(); it != myWarnings.end(); it++)
+                {
                     RBOUT( "* "+(*it) );
+                }
             }
         }
     }
+    
+    checkCharacterDataTaxonIndices( m );
     
     return m;
 }
@@ -1355,6 +1443,8 @@ std::vector<AbstractCharacterData *> NclReader::readMatrices(const std::string &
         cmv = readMatrices( fn.c_str(), ff, dt, il );
 		nexusReader.ClearContent();
     }
+    
+    checkCharacterDataTaxonIndices( cmv );
     
     return cmv;
 }

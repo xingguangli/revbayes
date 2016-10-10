@@ -5,7 +5,9 @@
 #include <string>
 
 #include "RbBitSet.h"
+#include "RbPtr.h"
 #include "Taxon.h"
+#include "TaxonMap.h"
 
 namespace RevBayesCore {
     
@@ -25,14 +27,11 @@ namespace RevBayesCore {
     public:
                                                     Clade(void);                                                //! Default constructor: empty clade of age 0.0
                                                     Clade(const Taxon &t);                                      //!< Default constructor with optional index
+                                                    Clade(const RbBitSet &t);                                   //!< Default constructor with optional index
                                                     Clade(const std::vector<Taxon> &n);                         //!< Default constructor with optional index
         
         virtual                                    ~Clade() {}
         
-        std::vector<Taxon>::const_iterator          begin(void) const;
-        std::vector<Taxon>::iterator                begin(void);
-        std::vector<Taxon>::const_iterator          end(void) const;
-        std::vector<Taxon>::iterator                end(void);
         // overloaded operators
         bool                                        operator==(const Clade &t) const;
         bool                                        operator!=(const Clade &t) const;
@@ -50,13 +49,12 @@ namespace RevBayesCore {
         double                                      getAge(void) const;                                         //!< Get the age of this clade.
         const RbBitSet&                             getBitRepresentation(void) const;                            //!< Get the clade as a bit representation.
         int                                         getNumberMissingTaxa(void) const;                           //!< Get the number of missing taxa.
-        std::vector<Taxon>&                         getTaxa(void);                                              //!< Get the taxon names.
-        const std::vector<Taxon>&                   getTaxa(void) const;                                        //!< Get the taxon names.
+        std::vector<Taxon>                          getTaxa(void) const;                                              //!< Get the taxon names.
+//        const std::vector<Taxon>&                   getTaxa(void) const;                                        //!< Get the taxon names.
+        Taxon&                                      getTaxon(size_t i);                                   //!< Get a single taxon name.
         const Taxon&                                getTaxon(size_t i) const;                                   //!< Get a single taxon name.
-        const std::string&                          getTaxonName(size_t i) const;                               //!< Get a single taxon name.
         void                                        setAge(double a);                                           //!< Set the age of the clade.
         void                                        setNumberMissingTaxa(int n);                                //!< Set the number of missing taxa in this clade.
-        void                                        setTaxonAge(size_t i, double age);                          //!< Set a single taxon's age.
         size_t                                      size(void) const;                                           //!< Get the number of taxa.
         std::string                                 toString(void) const;                                       //!< Convert this value into a string.
         
@@ -67,9 +65,9 @@ namespace RevBayesCore {
         // members
         double                                      age;
         int                                         num_missing;
-        std::vector<Taxon>                          taxa;
+//        std::vector<Taxon>                          taxa;
         RbBitSet                                    bitset;
-        
+    
     };
     
     // Global functions using the class

@@ -7,6 +7,7 @@
 #include "RbMathCombinatorialFunctions.h"
 #include "StochasticNode.h"
 #include "Taxon.h"
+#include "TaxonMapFactory.h"
 #include "TopologyNode.h"
 #include "TreeUtilities.h"
 
@@ -586,7 +587,7 @@ void AbstractRootedTreeDistribution::simulateTree( void )
     std::vector<Clade> sorted_clades;
 
     // create a clade that contains all species
-    Clade all_species = Clade(taxa);
+    Clade all_species = Clade(taxa );
     all_species.setAge( ra );
     sorted_clades.push_back(all_species);
 
@@ -718,7 +719,7 @@ void AbstractRootedTreeDistribution::simulateTree( void )
         simulateClade(nodes_in_clade, clade_age, max_age);
         nodes.push_back( nodes_in_clade[0] );
 
-        std::vector<Taxon> v_taxa;
+        RbBitSet v_taxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
         nodes_in_clade[0]->getTaxa(v_taxa);
         Clade new_clade = Clade(v_taxa);
         new_clade.setAge( nodes_in_clade[0]->getAge() );

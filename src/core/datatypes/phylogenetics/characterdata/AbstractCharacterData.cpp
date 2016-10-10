@@ -334,7 +334,8 @@ std::string AbstractCharacterData::getStateLabels(void) const {
  *
  * \return              The taxon.
  */
-const Taxon& AbstractCharacterData::getTaxon(size_t idx) const {
+const Taxon& AbstractCharacterData::getTaxon(size_t idx) const
+{
     
     return taxa[idx];
 }
@@ -345,7 +346,8 @@ const Taxon& AbstractCharacterData::getTaxon(size_t idx) const {
  *
  * \return     A const reference to the taxon data object at position tn.
  */
-const AbstractTaxonData& AbstractCharacterData::getTaxonData(size_t tn) const {
+const AbstractTaxonData& AbstractCharacterData::getTaxonData(size_t tn) const
+{
     
     if ( tn >= getNumberOfTaxa() )
         {

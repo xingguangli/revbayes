@@ -19,7 +19,7 @@ Tree::Tree(void) :
     root( NULL ),
     binary( true ),
     rooted( false ),
-    numTips( 0 ),
+    num_tips( 0 ),
     num_nodes( 0 )
 {
     
@@ -32,7 +32,7 @@ Tree::Tree(const Tree& t) :
     root( NULL ),
     binary( t.binary ),
     rooted( t.rooted ),
-    numTips( t.numTips ),
+    num_tips( t.num_tips ),
     num_nodes( t.num_nodes )
 {
         
@@ -79,7 +79,7 @@ Tree& Tree::operator=(const Tree &t)
         root = NULL;
         
         binary      = t.binary;
-        numTips     = t.numTips;
+        num_tips     = t.num_tips;
         num_nodes    = t.num_nodes;
         rooted      = t.rooted;
         
@@ -407,7 +407,7 @@ size_t Tree::getNumberOfNodes(void) const
 size_t Tree::getNumberOfTips( void ) const
 {
     
-    return numTips;
+    return num_tips;
 }
 
 
@@ -601,7 +601,7 @@ double Tree::getTmrca(const TopologyNode &n)
 }
 
 
-double Tree::getTmrca(const std::vector<Taxon> &t)
+double Tree::getTmrca(const RbBitSet &t)
 {
     
     return root->getTmrca( t );
@@ -843,7 +843,7 @@ void Tree::setRooted(bool tf)
 }
 
 
-void Tree::setRoot( TopologyNode* r, bool resetIndex )
+void Tree::setRoot( TopologyNode* r, bool reset_index )
 {
 
     // delete the old root
@@ -860,7 +860,7 @@ void Tree::setRoot( TopologyNode* r, bool resetIndex )
     // bootstrap all nodes from the root and add the in a pre-order traversal
     fillNodesByPhylogeneticTraversal(r);
 
-    if ( resetIndex == true )
+    if ( reset_index == true )
     {
         for (unsigned int i = 0; i < nodes.size(); ++i)
         {
@@ -871,11 +871,16 @@ void Tree::setRoot( TopologyNode* r, bool resetIndex )
     {
         orderNodesByIndex();
     }
+    
+//    for (unsigned int i = 0; i < nodes.size(); ++i)
+//    {
+//        nodes[i]->setTaxonIndex(i);
+//    }
 
     num_nodes = nodes.size();
     
     // count the number of tips
-    numTips = 0;
+    num_tips = 0;
     for (size_t i = 0; i < num_nodes; ++i)
     {
         if ( nodes[i] == NULL )
@@ -884,7 +889,7 @@ void Tree::setRoot( TopologyNode* r, bool resetIndex )
             std::cerr << i << " - " << nodes[i] << std::endl;
             throw RbException("Problem while reading in tree.");
         }
-        numTips += ( nodes[i]->isTip() ? 1 : 0);
+        num_tips += ( nodes[i]->isTip() ? 1 : 0);
     }
     
     

@@ -226,7 +226,7 @@ std::string PomoState::getStringValue(void) const
     int stateMinus5 = int(index) - 5;
     int typeOfPomoState = stateMinus5 / stepSize;
     int typeOfFrequency = stateMinus5 % stepSize +1;
-    int freqi = typeOfFrequency*virtualPopulationSize;
+    int freqi = typeOfFrequency*int(virtualPopulationSize);
     int freqj = 100 - freqi;
     switch ( typeOfPomoState )
     {

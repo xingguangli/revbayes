@@ -3,6 +3,7 @@
 #include "RandomNumberGenerator.h"
 #include "RbConstants.h"
 #include "RbException.h"
+#include "TaxonMapFactory.h"
 #include "TopologyNode.h"
 
 #include <algorithm>
@@ -295,7 +296,7 @@ void UniformTopologyDistribution::simulateTree( void )
         simulateClade( nodes_in_clade );
         ingroup_nodes.push_back( nodes_in_clade[0] );
         
-        std::vector<Taxon> v_taxa;
+        RbBitSet v_taxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
         nodes_in_clade[0]->getTaxa(v_taxa);
         virtual_taxa.push_back( Clade(v_taxa) );
         

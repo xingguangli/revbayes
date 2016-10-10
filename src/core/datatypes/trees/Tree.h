@@ -89,7 +89,7 @@ namespace RevBayesCore {
         std::vector<TopologyNode*>                          getTipNodesWithSpeciesName(const std::string &n);                                                   //!< Get a pointer to tip node i
         double                                              getTmrca(const TopologyNode &n);
         double                                              getTmrca(const Clade &c);
-        double                                              getTmrca(const std::vector<Taxon> &t);
+        double                                              getTmrca(const RbBitSet &t);
         TreeChangeEventHandler&                             getTreeChangeEventHandler(void) const;                                                              //!< Get the change-event handler for this tree
         double                                              getTreeLength(void) const;
         bool                                                hasSameTopology( const Tree &t ) const;                                                             //!< Has this tree the same topology?
@@ -123,7 +123,7 @@ namespace RevBayesCore {
         std::vector<TopologyNode*>                          nodes;                                                                  //!< Vector of pointers to all nodes
         bool                                                binary;                                                                 //!< Is the BranchLengthTree binary?
         bool                                                rooted;
-        size_t                                              numTips;
+        size_t                                              num_tips;
         size_t                                              num_nodes;
 
     };

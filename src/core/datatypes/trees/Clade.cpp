@@ -1,5 +1,7 @@
 #include "Clade.h"
+#include "RbException.h"
 #include "RbVectorUtilities.h"
+#include "TaxonMapFactory.h"
 
 #include <algorithm>
 #include <iostream>
@@ -11,13 +13,23 @@ using namespace RevBayesCore;
 
 /**
  * Default constructor required by the revlanguage code.
- * We use an empty string and an age of 0.0 for
- * this default object.
+ * We use an empty string and an age of 0.0 for this default object.
  */
 Clade::Clade( void ) :
     age( 0.0 ),
+    num_missing( 0 )
+{
+    
+}
+
+
+/**
+  * Constructor with a single taxon.
+  */
+Clade::Clade( const RbBitSet &b) :
+    age( 0.0 ),
     num_missing( 0 ),
-    taxa()
+    bitset( b )
 {
     
 }
@@ -29,10 +41,11 @@ Clade::Clade( void ) :
 Clade::Clade( const Taxon &t ) :
     age( 0.0 ),
     num_missing( 0 ),
-    taxa()
+    bitset( GLOBAL_TAXON_MAP->size() )
 {
     
-    taxa.push_back( t );
+    bitset.set( GLOBAL_TAXON_MAP->getTaxonIndex( t ) );
+    
 }
 
 
@@ -42,15 +55,20 @@ Clade::Clade( const Taxon &t ) :
  *
  * \param[in]   n    The vector containing the taxon names.
  */
-Clade::Clade(const std::vector<Taxon> &n) :
+Clade::Clade(const std::vector<Taxon> &n ) :
     age( 0.0 ),
     num_missing( 0 ),
-    taxa( n )
+    bitset( GLOBAL_TAXON_MAP->size() )
 {
     
+    RbPtr<TaxonMap> tm = GLOBAL_TAXON_MAP;
     // for identifiability we always keep the taxon names sorted
 //    std::sort(taxa.begin(), taxa.end());
-    VectorUtilities::sort( taxa );
+    for (size_t i=0; i<n.size(); ++i)
+    {
+        bitset.set( tm->getTaxonIndex( n[i] ) );
+    }
+    
 }
 
 
@@ -61,7 +79,7 @@ Clade::Clade(const std::vector<Taxon> &n) :
 bool Clade::operator==(const Clade &c) const 
 {
     
-    if ( c.size() != taxa.size() )
+    if ( c.getBitRepresentation().size() != bitset.size() || c.getBitRepresentation().getNumberSetBits() != bitset.getNumberSetBits() )
     {
         return false;
     }
@@ -73,9 +91,10 @@ bool Clade::operator==(const Clade &c) const
 //        return false;
 //    }
     
-    for (size_t i = 0; i < taxa.size(); ++i)
+    const RbBitSet &your_bits = c.getBitRepresentation();
+    for (size_t i = 0; i < bitset.size(); ++i)
     {
-        if ( taxa[i] != c.getTaxon(i) )
+        if ( bitset[i] != your_bits[i] )
         {
             return false;
         }
@@ -100,23 +119,24 @@ bool Clade::operator!=(const Clade &c) const
 bool Clade::operator<(const Clade &c) const 
 {
     
-    if ( taxa.size() < c.size() )
+    const RbBitSet &your_bits = c.getBitRepresentation();
+    if ( bitset.getNumberSetBits() < your_bits.getNumberSetBits() )
     {
         return true;
     }
-    else if ( taxa.size() > c.size() )
+    else if ( bitset.getNumberSetBits() > your_bits.getNumberSetBits() )
     {
         return false;
     }
     
-    for (size_t i = 0; i < taxa.size(); ++i)
+    for (size_t i = 0; i < bitset.size(); ++i)
     {
         
-        if ( taxa[i] < c.getTaxon(i) )
+        if ( bitset[i] == true && your_bits[i] == false )
         {
             return true;
         }
-        else if ( taxa[i] > c.getTaxon(i) )
+        else if ( bitset[i] == false && your_bits[i] == true )
         {
             return false;
         }
@@ -154,43 +174,6 @@ bool Clade::operator>=(const Clade &c) const
 }
 
 
-
-/**
- * Get the const-iterator to the first taxon name.
- */
-std::vector<Taxon>::const_iterator Clade::begin(void) const
-{
-    return taxa.begin();
-}
-
-
-/**
- * Get the iterator to the first taxon name.
- */
-std::vector<Taxon>::iterator Clade::begin(void)
-{
-    return taxa.begin();
-}
-
-
-/**
- * Get the const-iterator after the last taxon name.
- */
-std::vector<Taxon>::const_iterator Clade::end(void) const
-{
-    return taxa.end();
-}
-
-
-/**
- * Get the iterator after the last taxon name.
- */
-std::vector<Taxon>::iterator Clade::end(void)
-{
-    return taxa.end();
-}
-
-
 /**
  * The clone function is a convenience function to create proper copies of inherited objected.
  * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'B'.
@@ -210,7 +193,8 @@ Clade* Clade::clone(void) const
  */
 void Clade::addTaxon(const Taxon &t)
 {
-    taxa.push_back( t );
+    size_t index = GLOBAL_TAXON_MAP->getTaxonIndex( t );
+    bitset.set( index );
 }
 
 
@@ -253,19 +237,18 @@ int Clade::getNumberMissingTaxa( void ) const
  *
  * \return       The vector of taxon names.
  */
-std::vector<Taxon>& Clade::getTaxa( void )
+std::vector<Taxon> Clade::getTaxa( void ) const
 {
-    return taxa;
-}
-
-
-/**
- * Get all taxon names.
- *
- * \return       The vector of taxon names.
- */
-const std::vector<Taxon>& Clade::getTaxa( void ) const
-{
+    std::vector<Taxon> taxa;
+    RbPtr<TaxonMap> tm = GLOBAL_TAXON_MAP;
+    for (size_t i=0; i<bitset.size(); ++i)
+    {
+        if ( bitset.isSet(i) == true )
+        {
+            taxa.push_back( tm->getTaxon(i) );
+        }
+    }
+    
     return taxa;
 }
 
@@ -277,9 +260,27 @@ const std::vector<Taxon>& Clade::getTaxa( void ) const
  *
  * \return       The name of the taxon.
  */
-const Taxon& Clade::getTaxon(size_t i) const
+const Taxon& Clade::getTaxon(size_t index) const
 {
-    return taxa[i];
+    RbPtr<TaxonMap> tm = GLOBAL_TAXON_MAP;
+    size_t k=0;
+    for (size_t i=0; i<bitset.size(); ++i)
+    {
+        
+        if ( bitset.isSet(i) == true )
+        {
+            if ( k == index )
+            {
+                return tm->getTaxon(i);
+            }
+            ++k;
+        }
+        
+    }
+    
+    throw RbException("Could not find taxon with index in the clade.");
+    
+    return Taxon("");
 }
 
 
@@ -290,10 +291,41 @@ const Taxon& Clade::getTaxon(size_t i) const
  *
  * \return       The name of the taxon.
  */
-const std::string& Clade::getTaxonName(size_t i) const
+Taxon& Clade::getTaxon(size_t index)
 {
-    return taxa[i].getName();
+    RbPtr<TaxonMap> tm = GLOBAL_TAXON_MAP;
+    size_t k=0;
+    for (size_t i=0; i<bitset.size(); ++i)
+    {
+        
+        if ( bitset.isSet(i) == true )
+        {
+            if ( k == index )
+            {
+                return tm->getTaxon(i);
+            }
+            ++k;
+        }
+        
+    }
+    
+    throw RbException("Could not find taxon with index in the clade.");
+    
+//    return Taxon("");
 }
+
+
+///**
+// * Get the taxon name at position i.
+// *
+// * \param[in]    i    The index for the taxon name we are interested in.
+// *
+// * \return       The name of the taxon.
+// */
+//const std::string& Clade::getTaxonName(size_t i) const
+//{
+//    return taxa[i].getName();
+//}
 
 
 /**
@@ -320,17 +352,17 @@ void Clade::setNumberMissingTaxa(int n)
 }
 
 
-/**
- * Set the taxon age at position i.
- *
- * \param[in]    i    The index for the taxon we are interested in.
- * \param[in]    age  The age of the taxon to set.
- *
- */
-void Clade::setTaxonAge(size_t i, double age)
-{
-    taxa[i].setAge(age);
-}
+///**
+// * Set the taxon age at position i.
+// *
+// * \param[in]    i    The index for the taxon we are interested in.
+// * \param[in]    age  The age of the taxon to set.
+// *
+// */
+//void Clade::setTaxonAge(size_t i, double age)
+//{
+//    taxa[i].setAge(age);
+//}
 
 /**
  * Get the number of taxa contained in this clade.
@@ -339,7 +371,7 @@ void Clade::setTaxonAge(size_t i, double age)
  */
 size_t Clade::size(void) const 
 {
-    return taxa.size();
+    return bitset.getNumberSetBits();
 }
 
 
@@ -352,13 +384,20 @@ std::string Clade::toString( void ) const
 {
     std::string s = "{";
     
-    for (size_t i = 0; i < taxa.size(); ++i)
+    RbPtr<TaxonMap> taxon_map = GLOBAL_TAXON_MAP;
+    
+    size_t j = 0;
+    for (size_t i = 0; i < bitset.size(); ++i)
     {
-        if ( i > 0 )
+        if ( bitset.isSet(i) == true )
         {
-            s += ",";
+            if ( j > 0 )
+            {
+                s += ",";
+            }
+            s += taxon_map->getTaxon(i).getName();
+            ++j;
         }
-        s += taxa[i].getName();
     }
     s += "}";
     
@@ -366,7 +405,8 @@ std::string Clade::toString( void ) const
 }
 
 
-std::ostream& RevBayesCore::operator<<(std::ostream& o, const Clade& x) {
+std::ostream& RevBayesCore::operator<<(std::ostream& o, const Clade& x)
+{
    
     o << x.toString();
    

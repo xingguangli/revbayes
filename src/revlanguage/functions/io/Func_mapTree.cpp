@@ -11,6 +11,7 @@
 #include "RlTraceTree.h"
 #include "RlUtils.h"
 #include "StringUtilities.h"
+#include "TaxonMapFactory.h"
 #include "TreeSummary.h"
 #include "TraceTree.h"
 
@@ -66,7 +67,7 @@ RevPtr<RevVariable> Func_mapTree::execute( void )
         RevBayesCore::NexusWriter writer(filename);
         writer.openStream();
         
-        std::vector<RevBayesCore::Taxon> taxa;
+        RevBayesCore::RbBitSet taxa = RevBayesCore::RbBitSet( RevBayesCore::GLOBAL_TAXON_MAP->size() );
         tree->getRoot().getTaxa(taxa);
         RevBayesCore::Clade c( taxa );
         writer.writeNexusBlock(c);

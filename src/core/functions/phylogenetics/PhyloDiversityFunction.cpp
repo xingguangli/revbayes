@@ -1,6 +1,7 @@
 #include "PhyloDiversityFunction.h"
 #include "Clade.h"
 #include "RbConstants.h"
+#include "TaxonMapFactory.h"
 #include "TypedFunction.h"
 
 
@@ -62,7 +63,7 @@ void PhyloDiversityFunction::update( void )
         {
             
             TopologyNode *node = nodes[i];
-            std::vector<Taxon> taxa;
+            RbBitSet taxa = RbBitSet( GLOBAL_TAXON_MAP->size() );
             node->getTaxa( taxa );
             size_t cladeSize = taxa.size();
             if ( cladeSize < minCladeSize && cladeSize >= num_taxa && node->containsClade( sample, false ) )
@@ -150,6 +151,7 @@ double  PhyloDiversityFunction::calculateBranchWeights(size_t j)
     const TopologyNode& n = tau->getValue().getNode( j );
     if (n.isTip())
     {
+        
         std::vector<Taxon> taxa = sample.getTaxa();
         for (size_t i = 0; i < num_taxa; ++i)
         {
@@ -160,6 +162,7 @@ double  PhyloDiversityFunction::calculateBranchWeights(size_t j)
                 break;
             }
         }
+
     }
     else
     {
