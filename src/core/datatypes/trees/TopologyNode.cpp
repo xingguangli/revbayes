@@ -42,14 +42,14 @@ TopologyNode::TopologyNode(const Taxon& t, size_t indx) :
     parent( NULL ),
     tree( NULL ),
     node_index(indx),
-    taxon_index( GLOBAL_TAXON_MAP->getTaxonIndex(t) ),
+    taxon_index( -1 ),
     interior_node( false ),
     root_node( true ),
     tip_node( true ),
     fossil( false ),
     sampled_ancestor( false )
 {
-    
+    setTaxon( t );
 }
 
 
@@ -61,14 +61,14 @@ TopologyNode::TopologyNode(const std::string& n, size_t indx) :
     parent( NULL ),
     tree( NULL ),
     node_index(indx),
-    taxon_index( GLOBAL_TAXON_MAP->getTaxonIndex( Taxon(n) ) ),
+    taxon_index( -1 ),
     interior_node( false ),
     root_node( true ),
     tip_node( true ),
     fossil( false ),
     sampled_ancestor( false )
 {
-    
+    setName( n );
 }
 
 /** Copy constructor. We use a shallow copy. */
@@ -824,7 +824,15 @@ double TopologyNode::getMaxDepth( void ) const
 const std::string& TopologyNode::getName( void ) const
 {
     
-    return getTaxon().getName();
+    if ( isTip() == true )
+    {
+        return getTaxon().getName();
+    }
+    else
+    {
+        return RbUtils::EMPTY_STRING;
+    }
+    
 }
 
 
@@ -1251,14 +1259,7 @@ void TopologyNode::setName(const std::string &n)
     
     Taxon t = Taxon(n);
     t.setSpeciesName( n );
-    if ( GLOBAL_TAXON_MAP->hasTaxon( t ) == false )
-    {
-        taxon_index = GLOBAL_TAXON_MAP->addTaxon( t );
-    }
-    else
-    {
-        taxon_index = GLOBAL_TAXON_MAP->getTaxonIndex( t );
-    }
+    setTaxon( t );
     
 }
 
@@ -1283,7 +1284,14 @@ void TopologyNode::setSpeciesName(std::string const &n)
 void TopologyNode::setTaxon(Taxon const &t)
 {
     
-    taxon_index = GLOBAL_TAXON_MAP->getTaxonIndex( t );
+    if ( GLOBAL_TAXON_MAP->hasTaxon( t ) == false )
+    {
+        taxon_index = GLOBAL_TAXON_MAP->addTaxon( t );
+    }
+    else
+    {
+        taxon_index = GLOBAL_TAXON_MAP->getTaxonIndex( t );
+    }
     
 }
 

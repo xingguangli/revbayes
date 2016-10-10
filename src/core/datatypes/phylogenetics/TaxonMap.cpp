@@ -86,6 +86,13 @@ void TaxonMap::addTaxa(const Tree &t)
  */
 size_t TaxonMap::addTaxon( const Taxon &t )
 {
+    
+    // check for empty taxa
+    if ( t.getName() == "" )
+    {
+        return RbConstants::Size_t::nan;
+    }
+        
     const std::map< Taxon, size_t >::const_iterator& entry = taxa_map.find(t);
     if ( entry == taxa_map.end() )
     {
@@ -152,11 +159,19 @@ const Taxon& TaxonMap::getTaxon(size_t i) const
 
 size_t TaxonMap::getTaxonIndex(const Taxon &t) const
 {
+    
+    // check if the name makes sense
+    if ( t.getName() == "" )
+    {
+        return RbConstants::Size_t::nan;
+    }
+    
     const std::map< Taxon, size_t >::const_iterator& entry = taxa_map.find(t);
     
     if ( entry == taxa_map.end() )
     {
-        throw RbException("Couldn't find a clade with name '" + t.getName() + "'.");
+//        throw RbException("Couldn't find a clade with name '" + t.getName() + "'.");
+        return const_cast<TaxonMap*>(this)->addTaxon( t );
     }
     
     return entry->second;

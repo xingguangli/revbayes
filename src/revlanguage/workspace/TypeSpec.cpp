@@ -62,9 +62,14 @@ const std::string& TypeSpec::getElementType( void ) const
     static std::string emptyString;
     
     if ( element == NULL)
+    {
         return emptyString;
+    }
     else
+    {
         return element->getType();
+    }
+    
 }
 
 

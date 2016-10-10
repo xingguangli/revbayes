@@ -1924,12 +1924,16 @@ void NclReader::setExcluded( const NxsCharactersBlock* charblock, HomologousChar
     // Set excluded characters
 	NxsUnsignedSet excluded = charblock->GetExcludedIndexSet();
     for ( NxsUnsignedSet::const_iterator cit = excluded.begin(); cit != excluded.end(); cit++ )
+    {
         cMat->excludeCharacter( *cit );
+    }
+    
 }
 
 
 /** Translate a single NCL tree into a RevBayes tree */
-Tree* NclReader::translateNclSimpleTreeToBranchLengthTree(NxsSimpleTree& nTree, const NxsTaxaBlock *tb) {
+Tree* NclReader::translateNclSimpleTreeToBranchLengthTree(NxsSimpleTree& nTree, const NxsTaxaBlock *tb)
+{
     
     // get the root from the ncl tree
     const NxsSimpleNode* rn = nTree.GetRootConst();

@@ -74,7 +74,7 @@ void TmrcaStatistic::update( void )
     if ( found == false )
     {
         
-        for (size_t i = tree->getValue().getNumberOfTips(); i < n.size(); ++i)
+        for (size_t i = 0; i < n.size(); ++i)
         {
             
             TopologyNode *node = n[i];
@@ -94,7 +94,8 @@ void TmrcaStatistic::update( void )
         }
         
     }
-
+    
+    
     if ( index == RbConstants::Size_t::nan )
     {
         throw RbException("TMRCA-Statistics can only be applied if clade is present.");
