@@ -17,11 +17,11 @@ namespace RevBayesCore {
 
     double computeRootLikelihood2Nodes(const double *p_left,
                                                const double *p_right,
-                                               const size_t numSiteRates,
+                                               const size_t num_site_rates,
                                                const double * rootFreq,
                                                const size_t numStates,
                                                const size_t * patternCounts,
-                                               const size_t numPatterns,
+                                               const size_t num_patterns,
                                                const size_t siteOffset,
                                                const size_t nodeIndex,
                                                const size_t mixtureOffset,
@@ -36,11 +36,11 @@ namespace RevBayesCore {
 
     double computeRootFilteredLikelihood2Nodes(const double *p_left,
                                                  const double *p_right,
-                                                 const size_t numSiteRates,
+                                                 const size_t num_site_rates,
                                                  const double * rootFreq,
                                                  const size_t numStates,
                                                  const size_t * patternCounts,
-                                                 const size_t numPatterns,
+                                                 const size_t num_patterns,
                                                  const size_t siteOffset,
                                                  const size_t nodeIndex,
                                                  const size_t mixtureOffset,
@@ -55,11 +55,11 @@ namespace RevBayesCore {
     double computeRootFilteredLikelihood3Nodes(const double *p_left,
                                                const double *p_right,
                                                const double *p_middle,
-                                               const size_t numSiteRates,
+                                               const size_t num_site_rates,
                                                const double * rootFreq,
                                                const size_t numStates,
                                                const size_t * patternCounts,
-                                               const size_t numPatterns,
+                                               const size_t num_patterns,
                                                const size_t siteOffset,
                                                const size_t nodeIndex,
                                                const size_t mixtureOffset,
@@ -75,9 +75,9 @@ namespace RevBayesCore {
                                                AscertainmentBiasCorrectionStruct *ascNode,
                                                const double *p_left,
                                                const double *p_right,
-                                               const size_t numSiteRates,
+                                               const size_t num_site_rates,
                                                const size_t numStates,
-                                               const size_t numPatterns,
+                                               const size_t num_patterns,
                                                const size_t siteOffset,
                                                const size_t nodeIndex,
                                                const size_t mixtureOffset,
@@ -86,9 +86,9 @@ namespace RevBayesCore {
                                                const AscertainmentBiasCorrectionStruct *ascRight);
     void computeTipNodeFilteredLikelihood(double * p_node,
                                           AscertainmentBiasCorrectionStruct *ascNode,
-                                          const size_t numSiteRates,
+                                          const size_t num_site_rates,
                                           const size_t numStates,
-                                          const size_t numPatterns,
+                                          const size_t num_patterns,
                                           const size_t siteOffset,
                                           const size_t nodeIndex,
                                           const size_t mixtureOffset,
@@ -113,7 +113,7 @@ namespace RevBayesCore {
             const size_t ascActStride = this->num_nodes;
             const size_t abind = ascActStride*actInd + nodeIndex;
             while (abind >= ascBiasCorrStructs.size()) {
-              this->ascBiasCorrStructs.push_back(allocOneAscBiasCorrStruct(this->numChars));
+              this->ascBiasCorrStructs.push_back(allocOneAscBiasCorrStruct(this->num_chars));
             }
             return this->ascBiasCorrStructs.at(abind);
         }
@@ -122,7 +122,7 @@ namespace RevBayesCore {
             const size_t ascActStride = this->num_nodes;
             const size_t abind = ascActStride*actInd + nodeIndex;
             while (abind >= ascBiasCorrStructs.size()) {
-              this->ascBiasCorrStructs.push_back(allocOneAscBiasCorrStruct(this->numChars));
+              this->ascBiasCorrStructs.push_back(allocOneAscBiasCorrStruct(this->num_chars));
             }
             return const_cast<const AscertainmentBiasCorrectionStruct *>(this->ascBiasCorrStructs.at(abind));
         }
@@ -187,17 +187,17 @@ void RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::compute
     const AscertainmentBiasCorrectionStruct * ascRight = this->getAscBiasStruct(right);
     this->lnProb = computeRootFilteredLikelihood2Nodes(p_left,
                                                        p_right,
-                                                       this->numSiteRates,
+                                                       this->num_site_rates,
                                                        &(this->getRootFrequencies()[0]),
-                                                       this->numChars,
-                                                       &(this->patternCounts[0]),
-                                                       this->numPatterns,
+                                                       this->num_chars,
+                                                       &(this->pattern_counts[0]),
+                                                       this->num_patterns,
                                                        this->siteOffset,
                                                        this->nodeIndex,
                                                        this->mixtureOffset,
-                                                       this->pInv->getValue(),
-                                                       this->siteInvariant,
-                                                       this->invariantSiteIndex,
+                                                       this->p_inv->getValue(),
+                                                       this->site_invariant,
+                                                       this->invariant_site_index,
                                                        ascLeft,
                                                        ascRight,
                                                        this->uncorrectedLnProb,
@@ -216,17 +216,17 @@ void RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::compute
     this->lnProb = computeRootFilteredLikelihood3Nodes(p_left,
                                                        p_right,
                                                        p_middle,
-                                                       this->numSiteRates,
+                                                       this->num_site_rates,
                                                        &(this->getRootFrequencies()[0]),
-                                                       this->numChars,
-                                                       &(this->patternCounts[0]),
-                                                       this->numPatterns,
+                                                       this->num_chars,
+                                                       &(this->pattern_counts[0]),
+                                                       this->num_patterns,
                                                        this->siteOffset,
                                                        this->nodeIndex,
                                                        this->mixtureOffset,
-                                                       this->pInv->getValue(),
-                                                       this->siteInvariant,
-                                                       this->invariantSiteIndex,
+                                                       this->p_inv->getValue(),
+                                                       this->site_invariant,
+                                                       this->invariant_site_index,
                                                        ascLeft,
                                                        ascRight,
                                                        ascMiddle,
@@ -246,17 +246,17 @@ void RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::compute
     const AscertainmentBiasCorrectionStruct * ascLeft = this->getAscBiasStruct(left);
     const AscertainmentBiasCorrectionStruct * ascRight = this->getAscBiasStruct(right);
     AscertainmentBiasCorrectionStruct * ascNode = this->getAscBiasStruct(nodeIndex);
-    std::vector<const double *> tpMats(this->numSiteRates, NULL);
-    for (size_t mixture = 0; mixture < this->numSiteRates; ++mixture) {
-        tpMats[mixture] = this->transitionProbMatrices[mixture].theMatrix;
+    std::vector<const double *> tpMats(this->num_site_rates, NULL);
+    for (size_t mixture = 0; mixture < this->num_site_rates; ++mixture) {
+        tpMats[mixture] = this->transition_prob_matrices[mixture].theMatrix;
     }
     computeInternalNodeFilteredLikelihood(p_node,
                                           ascNode,
                                           p_left,
                                           p_right,
-                                          this->numSiteRates,
-                                          this->numChars,
-                                          this->numPatterns,
+                                          this->num_site_rates,
+                                          this->num_chars,
+                                          this->num_patterns,
                                           this->siteOffset,
                                           this->nodeIndex,
                                           this->mixtureOffset,
@@ -278,17 +278,17 @@ void RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::compute
     const AscertainmentBiasCorrectionStruct * ascRight = this->getAscBiasStruct(right);
 //    const AscertainmentBiasCorrectionStruct * ascMiddle = this->getAscBiasStruct(middle);
     AscertainmentBiasCorrectionStruct * ascNode = this->getAscBiasStruct(nodeIndex);
-    std::vector<const double *> tpMats(this->numSiteRates, NULL);
-    for (size_t mixture = 0; mixture < this->numSiteRates; ++mixture) {
-        tpMats[mixture] = this->transitionProbMatrices[mixture].theMatrix;
+    std::vector<const double *> tpMats(this->num_site_rates, NULL);
+    for (size_t mixture = 0; mixture < this->num_site_rates; ++mixture) {
+        tpMats[mixture] = this->transition_prob_matrices[mixture].theMatrix;
     }
     computeInternalNodeFilteredLikelihood(p_node,
                                           ascNode,
                                           p_left,
                                           p_right,
-                                          this->numSiteRates,
-                                          this->numChars,
-                                          this->numPatterns,
+                                          this->num_site_rates,
+                                          this->num_chars,
+                                          this->num_patterns,
                                           this->siteOffset,
                                           this->nodeIndex,
                                           this->mixtureOffset,
@@ -302,24 +302,24 @@ void RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::compute
     // compute the transition probabilities
     this->updateTransitionProbabilities( nodeIndex, node.getBranchLength() );
     double* p_node = this->partialLikelihoods + this->activeLikelihood[nodeIndex]*this->activeLikelihoodOffset + nodeIndex*this->nodeOffset;
-    std::vector<const double *> tpMats(this->numSiteRates, NULL);
-    for (size_t mixture = 0; mixture < this->numSiteRates; ++mixture) {
-        tpMats[mixture] = this->transitionProbMatrices[mixture].theMatrix;
+    std::vector<const double *> tpMats(this->num_site_rates, NULL);
+    for (size_t mixture = 0; mixture < this->num_site_rates; ++mixture) {
+        tpMats[mixture] = this->transition_prob_matrices[mixture].theMatrix;
     }
     AscertainmentBiasCorrectionStruct * ascNode = this->getAscBiasStruct(nodeIndex);
 
     computeTipNodeFilteredLikelihood(p_node,
                                      ascNode,
-                                     this->numSiteRates,
-                                     this->numChars,
-                                     this->numPatterns,
+                                     this->num_site_rates,
+                                     this->num_chars,
+                                     this->num_patterns,
                                      this->siteOffset,
                                      this->nodeIndex,
                                      this->mixtureOffset,
                                      &(tpMats[0]),
-                                     this->gapMatrix[nodeIndex],
-                                     this->charMatrix[nodeIndex],
-                                     this->usingAmbiguousCharacters);
+                                     this->gap_matrix[nodeIndex],
+                                     this->char_matrix[nodeIndex],
+                                     this->using_ambiguous_characters);
 }
 
 

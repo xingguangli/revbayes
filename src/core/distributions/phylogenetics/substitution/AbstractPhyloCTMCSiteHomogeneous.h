@@ -208,14 +208,8 @@ void computeTipNodeLikelihood(double * p_node,
         double                                                              storedLnProb;
         size_t                                                              num_nodes;
         size_t                                                              num_sites;
-<<<<<<< HEAD
-        const size_t                                                        numChars;
-
-        size_t                                                              numSiteRates;
-=======
         const size_t                                                        num_chars;
         size_t                                                              num_site_rates;
->>>>>>> ba5fc2b3c40603a9331c0202997a38483f05e4f9
         const TypedDagNode<Tree>*                                           tau;
         std::vector<TransitionProbabilityMatrix>                            transition_prob_matrices;
 
@@ -325,20 +319,12 @@ RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::AbstractPhyloCTMCSiteH
     num_chars( nChars ),
     num_site_rates( nMix ),
     tau( t ),
-<<<<<<< HEAD
-    transitionProbMatrices( std::vector<TransitionProbabilityMatrix>(numSiteRates, TransitionProbabilityMatrix(numChars) ) ),
-    partialLikelihoods( NULL ),
-    activeLikelihood( std::vector<size_t>(num_nodes, 0) ),
-    marginalLikelihoods( new double[num_nodes*numSiteRates*num_sites*numChars] ),
-//    marginalLikelihoods( NULL ),
-=======
     transition_prob_matrices( std::vector<TransitionProbabilityMatrix>(num_site_rates, TransitionProbabilityMatrix(num_chars) ) ),
 //    partialLikelihoods( new double[2*num_nodes*num_site_rates*num_sites*num_chars] ),
     partialLikelihoods( NULL ),
     activeLikelihood( std::vector<size_t>(num_nodes, 0) ),
 //    marginalLikelihoods( new double[num_nodes*num_site_rates*num_sites*num_chars] ),
     marginalLikelihoods( NULL ),
->>>>>>> ba5fc2b3c40603a9331c0202997a38483f05e4f9
     perNodeSiteLogScalingFactors( std::vector<std::vector< std::vector<double> > >(2, std::vector<std::vector<double> >(num_nodes, std::vector<double>(num_sites, 0.0) ) ) ),
     use_scaling( true ),
     ambiguous_char_matrix(),
@@ -349,12 +335,8 @@ RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::AbstractPhyloCTMCSiteH
     invariant_site_index( num_sites, 0 ),
     num_patterns( num_sites ),
     compressed( c ),
-<<<<<<< HEAD
     nodeIndex( 0 ),
-    sitePattern( std::vector<size_t>(num_sites, 0) ),
-=======
     site_pattern( std::vector<size_t>(num_sites, 0) ),
->>>>>>> ba5fc2b3c40603a9331c0202997a38483f05e4f9
     touched( false ),
     changed_nodes( std::vector<bool>(num_nodes, false) ),
     dirty_nodes( std::vector<bool>(num_nodes, true) ),
@@ -445,16 +427,9 @@ RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::AbstractPhyloCTMCSiteH
     compressed( n.compressed ),
     site_pattern( n.site_pattern ),
     touched( false ),
-<<<<<<< HEAD
-    changedNodes( n.changedNodes ),
-    dirtyNodes( n.dirtyNodes ),
-    nodeIndex( 0 ),
-    usingAmbiguousCharacters( n.usingAmbiguousCharacters ),
-=======
     changed_nodes( n.changed_nodes ),
     dirty_nodes( n.dirty_nodes ),
     using_ambiguous_characters( n.using_ambiguous_characters ),
->>>>>>> ba5fc2b3c40603a9331c0202997a38483f05e4f9
     treatUnknownAsGap( n.treatUnknownAsGap ),
     treatAmbiguousAsGaps( n.treatAmbiguousAsGaps ),
     useMarginalLikelihoods( n.useMarginalLikelihoods ),
@@ -1372,28 +1347,18 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::fillLikelihoodVec
         else
         {
             // this is an internal node
-<<<<<<< HEAD
-            const TopologyNode &left = node.getChild(0);
-            size_t leftIndex = left.getIndex();
-            fillLikelihoodVector( left, leftIndex );
-            const TopologyNode &right = node.getChild(1);
-            size_t rightIndex = right.getIndex();
-
-            fillLikelihoodVector( right, rightIndex );
-=======
             const TopologyNode     &left        = node.getChild(0);
             size_t                  left_index  = left.getIndex();
             fillLikelihoodVector( left, left_index );
             const TopologyNode     &right       = node.getChild(1);
             size_t                  right_index = right.getIndex();
             fillLikelihoodVector( right, right_index );
->>>>>>> ba5fc2b3c40603a9331c0202997a38483f05e4f9
 
             // now compute the likelihoods of this internal node
             computeInternalNodeLikelihood(node,node_index,left_index,right_index);
 
             // rescale likelihood vector
-            scale(node_index,left_index,right_index);
+        scale(node_index,left_index,right_index);
         }
 
     }
@@ -1857,7 +1822,6 @@ template<class charType>
 void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::scale( size_t node_index, size_t left, size_t right )
 {
 
-<<<<<<< HEAD
     size_t ali = this->activeLikelihood.at(nodeIndex);
     size_t leftali = this->activeLikelihood.at(left);
     size_t rightali = this->activeLikelihood.at(right);
@@ -1871,9 +1835,6 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::scale( size_t nod
 
     if ( use_scaling == true && nodeIndex % 4 == 0 )
     double* p_node = this->partialLikelihoods + this->activeLikelihood[nodeIndex]*this->activeLikelihoodOffset + nodeIndex*this->nodeOffset;
-=======
-    double* p_node = this->partialLikelihoods + this->activeLikelihood[node_index]*this->activeLikelihoodOffset + node_index*this->nodeOffset;
->>>>>>> ba5fc2b3c40603a9331c0202997a38483f05e4f9
 
     if ( use_scaling == true && node_index % RbSettings::userSettings().getScalingDensity() == 0 )
     {
@@ -1909,12 +1870,8 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::scale( size_t nod
 
             }
 
-<<<<<<< HEAD
 
             this->perNodeSiteLogScalingFactors[this->activeLikelihood[nodeIndex]][nodeIndex][site] = this->perNodeSiteLogScalingFactors[this->activeLikelihood[left]][left][site] + this->perNodeSiteLogScalingFactors[this->activeLikelihood[right]][right][site] - log(max);
-=======
-            this->perNodeSiteLogScalingFactors[this->activeLikelihood[node_index]][node_index][site] = this->perNodeSiteLogScalingFactors[this->activeLikelihood[left]][left][site] + this->perNodeSiteLogScalingFactors[this->activeLikelihood[right]][right][site] - log(max);
->>>>>>> ba5fc2b3c40603a9331c0202997a38483f05e4f9
 
 
             // compute the per site probabilities
@@ -1941,11 +1898,8 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::scale( size_t nod
         // iterate over all mixture categories
         for (size_t site = 0; site < this->pattern_block_size ; ++site)
         {
-<<<<<<< HEAD
             nodesActivePNSLSF.at(site) = this->perNodeSiteLogScalingFactors[this->activeLikelihood[left]][left][site] + this->perNodeSiteLogScalingFactors[this->activeLikelihood[right]][right][site];
-=======
-            this->perNodeSiteLogScalingFactors[this->activeLikelihood[node_index]][node_index][site] = this->perNodeSiteLogScalingFactors[this->activeLikelihood[left]][left][site] + this->perNodeSiteLogScalingFactors[this->activeLikelihood[right]][right][site];
->>>>>>> ba5fc2b3c40603a9331c0202997a38483f05e4f9
+
         }
 
     }

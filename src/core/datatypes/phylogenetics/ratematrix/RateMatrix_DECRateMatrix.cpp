@@ -23,18 +23,22 @@
 using namespace RevBayesCore;
 
 /** Construct rate matrix with n states */
-RateMatrix_DECRateMatrix::RateMatrix_DECRateMatrix(size_t n, bool cs, bool ex) : GeneralRateMatrix( n ),
-    num_states(n),
-    numCharacters(round(log2(n))),
+RateMatrix_DECRateMatrix::RateMatrix_DECRateMatrix(size_t ns, size_t nc, bool cs, bool ex, bool os, bool uc, size_t mrs) : GeneralRateMatrix( ns ),
+    num_states(ns),
+    numCharacters(nc),
     dispersalRates( RbVector<RbVector<double > >( numCharacters, RbVector<double>(numCharacters, 0.0) ) ),
-    extirpationRates( std::vector<double>(numCharacters, 1.0/n) ),
-    rangeSize( std::vector<double>(numCharacters, 1.0/n) ),
+    extirpationRates( std::vector<double>(numCharacters, 1.0/ns) ),
+    rangeSize( std::vector<double>(numCharacters, 1.0/ns) ),
+    birthRate(0.0),
     useSquaring(!true),
     excludeNullRange(ex),
-    conditionSurvival(cs)
+    conditionSurvival(cs),
+    orderStatesByNum(os),
+    useCladogenesis(uc),
+    maxRangeSize(mrs)
 {
 
-    theEigenSystem       = new EigenSystem(the_rate_matrix);
+    theEigenSystem = new EigenSystem(the_rate_matrix);
     c_ijk.resize(num_states * num_states * num_states);
     cc_ijk.resize(num_states * num_states * num_states);
     
@@ -56,24 +60,32 @@ RateMatrix_DECRateMatrix::RateMatrix_DECRateMatrix(size_t n, bool cs, bool ex) :
 /** Copy constructor */
 RateMatrix_DECRateMatrix::RateMatrix_DECRateMatrix(const RateMatrix_DECRateMatrix& m) : GeneralRateMatrix( m ) {
     
-    theEigenSystem       = new EigenSystem( *m.theEigenSystem );
-    c_ijk                = m.c_ijk;
-    cc_ijk               = m.cc_ijk;
     bits                 = m.bits;
     inverseBits          = m.inverseBits;
+    statesToBitsByNumOn  = m.statesToBitsByNumOn;
+    bitsToStatesByNumOn  = m.bitsToStatesByNumOn;
     transitions          = m.transitions;
     lossOrGain           = m.lossOrGain;
     transitionAreas      = m.transitionAreas;
     numCharacters        = m.numCharacters;
-    num_states            = m.num_states;
+    num_states           = m.num_states;
+    useSquaring          = m.useSquaring;
+    conditionSurvival    = m.conditionSurvival;
+    excludeNullRange     = m.excludeNullRange;
+    orderStatesByNum     = m.orderStatesByNum;
+    theEigenSystem       = new EigenSystem( *m.theEigenSystem );
+    c_ijk                = m.c_ijk;
+    cc_ijk               = m.cc_ijk;
     dispersalRates       = m.dispersalRates;
     extirpationRates     = m.extirpationRates;
     rangeSize            = m.rangeSize;
-    useSquaring          = m.useSquaring;
-    conditionSurvival    = m.conditionSurvival;
-    excludeNullRange      = m.excludeNullRange;
+    birthRate            = m.birthRate;
+    cladogeneticMatrix   = m.cladogeneticMatrix;
+    useCladogenesis      = m.useCladogenesis;
+    maxRangeSize         = m.maxRangeSize;
     
     theEigenSystem->setRateMatrixPtr(the_rate_matrix);
+
 }
 
 
@@ -92,28 +104,49 @@ RateMatrix_DECRateMatrix& RateMatrix_DECRateMatrix::operator=(const RateMatrix_D
         
         delete theEigenSystem;
         
-        theEigenSystem       = new EigenSystem( *r.theEigenSystem );
-        c_ijk                = r.c_ijk;
-        cc_ijk               = r.cc_ijk;
-        dispersalRates       = r.dispersalRates;
-        extirpationRates     = r.extirpationRates;
         bits                 = r.bits;
         inverseBits          = r.inverseBits;
+        statesToBitsByNumOn  = r.statesToBitsByNumOn;
+        bitsToStatesByNumOn  = r.bitsToStatesByNumOn;
         transitions          = r.transitions;
         lossOrGain           = r.lossOrGain;
         transitionAreas      = r.transitionAreas;
         numCharacters        = r.numCharacters;
         num_states           = r.num_states;
-        rangeSize            = r.rangeSize;
         useSquaring          = r.useSquaring;
         conditionSurvival    = r.conditionSurvival;
-        excludeNullRange      = r.excludeNullRange;
-        
+        excludeNullRange     = r.excludeNullRange;
+        orderStatesByNum     = r.orderStatesByNum;
+        theEigenSystem       = new EigenSystem( *r.theEigenSystem );
+        c_ijk                = r.c_ijk;
+        cc_ijk               = r.cc_ijk;
+        dispersalRates       = r.dispersalRates;
+        extirpationRates     = r.extirpationRates;
+        rangeSize            = r.rangeSize;
+        birthRate            = r.birthRate;
+        cladogeneticMatrix   = r.cladogeneticMatrix;
+        useCladogenesis      = r.useCladogenesis;
+        maxRangeSize         = r.maxRangeSize;
+
         theEigenSystem->setRateMatrixPtr(the_rate_matrix);
         
     }
     
     return *this;
+}
+
+RateMatrix_DECRateMatrix& RateMatrix_DECRateMatrix::assign(const Assignable &m)
+{
+    const RateMatrix_DECRateMatrix *rm = dynamic_cast<const RateMatrix_DECRateMatrix*>(&m);
+    if ( rm != NULL )
+    {
+        return operator=(*rm);
+    }
+    else
+    {
+        throw RbException("Could not assign rate matrix.");
+    }
+
 }
 
 double RateMatrix_DECRateMatrix::averageRate(void) const
@@ -277,7 +310,9 @@ void RateMatrix_DECRateMatrix::computeExponentialMatrixByRepeatedSquaring(double
     //For the moment, we arbitrarily do 10 such squarings, as it seems to perform well in practice (N. Lartillot, personal communication).
     //first, multiply the matrix by the right scalar
     //2^10 = 1024
-    double tOver2s = t/(1024);
+    size_t num_squaring = 2*5;
+    size_t d_squaring = (size_t)pow(2,num_squaring);
+    double tOver2s = t/(d_squaring);
     
     for ( size_t i = 0; i < num_states; i++ ) {
         for ( size_t j = 0; j < num_states; j++ ) {
@@ -290,16 +325,25 @@ void RateMatrix_DECRateMatrix::computeExponentialMatrixByRepeatedSquaring(double
     }
     //Now we can do the multiplications
     TransitionProbabilityMatrix P2 (num_states);
-    squareMatrix (P, P2); //P2 at power 2
-    squareMatrix (P2, P); //P at power 4
-    squareMatrix (P, P2); //P2 at power 8
-    squareMatrix (P2, P); //P at power 16
-    squareMatrix (P, P2); //P2 at power 32
-    squareMatrix (P2, P); //P at power 64
-    squareMatrix (P, P2); //P2 at power 128
-    squareMatrix (P2, P); //P at power 256
-    squareMatrix (P, P2); //P2 at power 512
-    squareMatrix (P2, P); //P at power 1024
+    
+    for (size_t i = 0; i < num_squaring; i += 2)
+    {
+        squareMatrix (P, P2); //P2 at power 2^i
+        squareMatrix (P2, P); //P at power 2^i+1
+    }
+    
+    if (false) {
+        squareMatrix (P, P2); //P2 at power 2
+        squareMatrix (P2, P); //P at power 4
+        squareMatrix (P, P2); //P2 at power 8
+        squareMatrix (P2, P); //P at power 16
+        squareMatrix (P, P2); //P2 at power 32
+        squareMatrix (P2, P); //P at power 64
+        squareMatrix (P, P2); //P2 at power 128
+        squareMatrix (P2, P); //P at power 256
+        squareMatrix (P, P2); //P2 at power 512
+        squareMatrix (P2, P); //P at power 1024
+    }
     
     return;
 }
@@ -328,26 +372,62 @@ const std::vector<double>& RateMatrix_DECRateMatrix::getRangeSize(void) const
 
 void RateMatrix_DECRateMatrix::makeBits(void)
 {
-    bits = std::vector<std::vector<unsigned> >(num_states, std::vector<unsigned>(numCharacters, 0));
-    for (size_t i = 1; i < num_states; i++)
+    
+    size_t num_all_states = (size_t)pow(2,numCharacters);
+    bitsByNumOn.resize(numCharacters+1);
+    statesToBitsByNumOn.resize(num_all_states);
+    bits = std::vector<std::vector<unsigned> >(num_all_states, std::vector<unsigned>(numCharacters, 0));
+    bitsByNumOn[0].push_back(bits[0]);
+    for (size_t i = 1; i < num_all_states; i++)
     {
-        size_t n = i;
+        size_t m = i;
         for (size_t j = 0; j < numCharacters; j++)
         {
-            bits[i][j] = n % 2;
-            n /= 2;
-            if (n == 0)
+            bits[i][j] = m % 2;
+            m /= 2;
+            if (m == 0)
                 break;
         }
+        size_t j = numBitsOn(bits[i]);
+        bitsByNumOn[j].push_back(bits[i]);
+        
     }
-    for (size_t i = 0; i < num_states; i++)
+    for (size_t i = 0; i < num_all_states; i++)
     {
         inverseBits[ bits[i] ] = (unsigned)i;
     }
+    
+    // assign state to each bit vector, sorted by numOn
+    size_t k = 0;
+    for (size_t i = 0; i < bitsByNumOn.size(); i++)
+    {
+        for (size_t j = 0; j < bitsByNumOn[i].size(); j++)
+        {
+            statesToBitsByNumOn[k++] = bitsByNumOn[i][j];
+        }
+    }
+    
+    for (size_t i = 0; i < statesToBitsByNumOn.size(); i++)
+    {
+        bitsToStatesByNumOn[ statesToBitsByNumOn[i] ] = (unsigned)i;
+    }
+    
+
+    
+}
+
+size_t RateMatrix_DECRateMatrix::numBitsOn(std::vector<unsigned> v)
+{
+    size_t n = 0;
+    for (size_t i = 0; i < v.size(); i++) {
+        n += v[i];
+    }
+    return n;
 }
 
 void RateMatrix_DECRateMatrix::makeTransitions(void)
 {
+    
     transitions.resize(num_states);
     lossOrGain.resize(num_states);
     transitionAreas.resize(num_states);
@@ -355,7 +435,13 @@ void RateMatrix_DECRateMatrix::makeTransitions(void)
     // populate integer-valued transitions between states
     for (size_t i = 1; i < num_states; i++)
     {
-        std::vector<unsigned> b = bits[i];
+//        std::vector<unsigned> b = bits[i];
+        
+        std::vector<unsigned> b;
+        if (orderStatesByNum)
+            b = statesToBitsByNumOn[i];
+        else
+            b = bits[i];
         
         // each row has b.size() events (excluding i==0)
         for (size_t j = 0; j < b.size(); j++)
@@ -365,8 +451,25 @@ void RateMatrix_DECRateMatrix::makeTransitions(void)
             // change the range cfg at area j
             tmp[j] = (b[j] == 0 ? 1 : 0);
             
+            // ignore events larger than maxRangeSize
+            if (numBitsOn(tmp) > maxRangeSize || numBitsOn(b) > maxRangeSize)
+            {
+//                std::cout << i << " : ";
+//                for (size_t k = 0; k < b.size(); k++)
+//                    std::cout << b[k];
+//                std::cout << " -> ";
+//                for (size_t k = 0; k < b.size(); k++)
+//                    std::cout << tmp[k];
+//                std::cout << "\n";
+                continue;
+            }
+            
             // store integer-valued event
-            transitions[i].push_back(inverseBits[tmp]);
+//            transitions[i].push_back(inverseBits[tmp]);
+            if (orderStatesByNum)
+                transitions[i].push_back(bitsToStatesByNumOn[tmp]);
+            else
+                transitions[i].push_back(inverseBits[tmp]);
             
             // is event a gain or a loss?
             lossOrGain[i].push_back(tmp[j]);
@@ -410,6 +513,18 @@ void RateMatrix_DECRateMatrix::setExtirpationRates(const std::vector<double>& er
 void RateMatrix_DECRateMatrix::setRangeSize(const std::vector<double>& rs)
 {
     rangeSize = rs;
+    needs_update = true;
+}
+
+void RateMatrix_DECRateMatrix::setCladogeneticMatrix(const RevBayesCore::MatrixReal &cp)
+{
+    cladogeneticMatrix = cp;
+    needs_update = true;
+}
+
+void RateMatrix_DECRateMatrix::setBirthRate(const double &br)
+{
+    birthRate = br;
     needs_update = true;
 }
 
@@ -510,6 +625,9 @@ void RateMatrix_DECRateMatrix::update( void ) {
         // now update the eigensystem
         if (!useSquaring)
             updateEigenSystem();
+        
+
+//        std::cout << *the_rate_matrix << "\n";
         
         // clean flags
         needs_update = false;

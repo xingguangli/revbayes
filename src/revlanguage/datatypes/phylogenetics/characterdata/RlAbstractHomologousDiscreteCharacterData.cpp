@@ -10,6 +10,7 @@
 #include "RlString.h"
 #include "RlDiscreteTaxonData.h"
 #include "RlSimplex.h"
+#include "RbBitSet.h"
 
 
 using namespace RevLanguage;
@@ -20,7 +21,7 @@ AbstractHomologousDiscreteCharacterData::AbstractHomologousDiscreteCharacterData
 {
     
     initMethods();
-    
+
 }
 
 
@@ -46,7 +47,7 @@ AbstractHomologousDiscreteCharacterData::AbstractHomologousDiscreteCharacterData
     dagNode->incrementReferenceCount();
     
     initMethods();
-    
+
 }
 
 
@@ -59,13 +60,13 @@ AbstractHomologousDiscreteCharacterData::AbstractHomologousDiscreteCharacterData
     dagNode->incrementReferenceCount();
     
     initMethods();
-    
+
 }
 
 
 AbstractHomologousDiscreteCharacterData::AbstractHomologousDiscreteCharacterData(const AbstractHomologousDiscreteCharacterData &d) :
-HomologousCharacterData( d ),
-dagNode( NULL )
+    HomologousCharacterData( d ),
+    dagNode( NULL )
 {
     
     if ( d.dagNode != NULL )
@@ -149,7 +150,7 @@ AbstractHomologousDiscreteCharacterData* AbstractHomologousDiscreteCharacterData
 AbstractHomologousDiscreteCharacterData* AbstractHomologousDiscreteCharacterData::concatenate(const AbstractHomologousDiscreteCharacterData &d) const
 {
     AbstractHomologousDiscreteCharacterData* cloneObj = clone();
-    
+
     // we need to make this a constant DAG node so that we can actually modify the value
     // otherwise the value might be overwritten again, e.g., if this is a deterministic node.
     cloneObj->makeConstantValue();
@@ -195,17 +196,17 @@ RevPtr<RevVariable> AbstractHomologousDiscreteCharacterData::executeMethod(std::
     else if (name == "[]")
     {
         found = true;
-        
+    
         // get the member with give index
         const Natural& index = static_cast<const Natural&>( args[0].getVariable()->getRevObject() );
-        
+    
         if (this->dagNode->getValue().getNumberOfTaxa() < (size_t)(index.getValue()) )
         {
             throw RbException("Index out of bounds in []");
         }
-        
+    
         const RevBayesCore::AbstractDiscreteTaxonData& element = dagNode->getValue().getTaxonData(size_t(index.getValue()) - 1);
-        
+    
         return new RevVariable( new AbstractDiscreteTaxonData( element.clone() ) );
     }
     else if (name == "computeStateFrequencies")
@@ -221,43 +222,6 @@ RevPtr<RevVariable> AbstractHomologousDiscreteCharacterData::executeMethod(std::
         found = true;
         
         const RevObject& argument = args[0].getVariable()->getRevObject();
-        RevBayesCore::AbstractHomologousDiscreteCharacterData &v = dagNode->getValue();
-        size_t nChars = v.getNumberOfCharacters();
-        size_t nTaxa = v.getNumberOfTaxa();
-        
-        // e.g. data.setNumStatesPartition(2)
-        size_t n = size_t( static_cast<const Natural&>( argument ).getValue() );
-        for (size_t i = 0; i < nChars; i++)
-        {
-            int max = 0;
-            for (size_t j = 0; j < nTaxa; j++)
-            {
-                const RevBayesCore::AbstractDiscreteTaxonData& td = v.getTaxonData(j);
-                if ( td.getCharacter(i).isMissingState() == false && td.getCharacter(i).isGapState() == false)
-                {
-                    int k = int(td.getCharacter(i).getStateIndex()) + 1;
-                    if (k > max)
-                    {
-                        max = k;
-                    }
-                }
-            }
-            
-            if (max == n)
-            {
-                v.includeCharacter(i);
-            }
-            else
-            {
-                v.excludeCharacter(i);
-            }
-            
-        }
-        return NULL;
-    }
-    else if (name == "isHomologous")
-    {
-        found = true;
         int n = static_cast<const Natural&>( argument ).getValue();
         
         RevBayesCore::AbstractHomologousDiscreteCharacterData *trans_data = this->dagNode->getValue().expandCharacters( n );
@@ -491,10 +455,24 @@ RevPtr<RevVariable> AbstractHomologousDiscreteCharacterData::executeMethod(std::
                 const RevBayesCore::AbstractDiscreteTaxonData& td = v.getTaxonData(j);
                 if ( td.getCharacter(i).isMissingState() == false && td.getCharacter(i).isGapState() == false)
                 {
-                    int k = int(td.getCharacter(i).getStateIndex()) + 1;
-                    if (k > max)
+                    if(td.getCharacter(i).getNumberObservedStates() > 1)
                     {
-                        max = k;
+                        const RevBayesCore::RbBitSet& state = td.getCharacter(i).getState();
+                        for(size_t k = 0; k < state.size(); k++)
+                        {
+                            if(state.isSet(k) && k +1 > max)
+                            {
+                                max = k+1;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        int k = int(td.getCharacter(i).getStateIndex()) + 1;
+                        if (k > max)
+                        {
+                            max = k;
+                        }
                     }
                 }
             }
@@ -643,7 +621,7 @@ bool AbstractHomologousDiscreteCharacterData::isModelObject( void ) const
 
 void AbstractHomologousDiscreteCharacterData::initMethods( void )
 {
-    
+
     // add the DAG node member methods
     // note that this is a sage case because all DAG nodes are member objects
     if ( dagNode != NULL )

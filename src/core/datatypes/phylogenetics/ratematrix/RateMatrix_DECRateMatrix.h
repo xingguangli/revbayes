@@ -22,12 +22,13 @@ namespace RevBayesCore {
     class RateMatrix_DECRateMatrix : public GeneralRateMatrix {
         
     public:
-        RateMatrix_DECRateMatrix(size_t n, bool cs, bool ex);                                                                                               //!< Construct rate matrix with n states
+        RateMatrix_DECRateMatrix(size_t ns, size_t nc, bool cs, bool ex, bool os, bool uc, size_t mrs);                                                                                               //!< Construct rate matrix with n states
         RateMatrix_DECRateMatrix(const RateMatrix_DECRateMatrix& m);                                                                                //!< Copy constructor
         virtual                         ~RateMatrix_DECRateMatrix(void);                                                              //!< Destructor
         
         // overloaded operators
         RateMatrix_DECRateMatrix&                   operator=(const RateMatrix_DECRateMatrix& r);
+        virtual RateMatrix_DECRateMatrix&           assign(const Assignable &m);
         
         // RateMatrix functions
         double                              averageRate(void) const;
@@ -41,6 +42,8 @@ namespace RevBayesCore {
         void                                setDispersalRates(const RbVector<RbVector<double> >& dr);                              //!< Directly set dispersal rates
         void                                setExtirpationRates(const std::vector<double>& er);                                     //!< Directly set extirpation rates
         void                                setRangeSize(const std::vector<double>& rs);                                     //!< Directly set range size simplex
+        void                                setBirthRate(const double& br);
+        void                                setCladogeneticMatrix(const MatrixReal& cp);
 
         void                                update(void);
         
@@ -53,11 +56,15 @@ namespace RevBayesCore {
         void                                updateEigenSystem(void);                                                            //!< Update the system of eigenvalues and eigenvectors
         
         
+        size_t                                              numBitsOn(std::vector<unsigned> v);
         void                                                makeBits(void);
         void                                                makeTransitions(void);
         
         std::vector<std::vector<unsigned> >                 bits;
         std::map<std::vector<unsigned>, unsigned>           inverseBits;
+        std::vector<std::vector<std::vector<unsigned> > >   bitsByNumOn;
+        std::vector<std::vector<unsigned> >                 statesToBitsByNumOn;
+        std::map< std::vector<unsigned>, unsigned>          bitsToStatesByNumOn;
         std::vector<std::vector<unsigned> >                 transitions;
         std::vector<std::vector<unsigned> >                 lossOrGain;
         std::vector<std::vector<std::vector<unsigned> > >   transitionAreas;
@@ -66,15 +73,20 @@ namespace RevBayesCore {
         bool                                                useSquaring;
         bool                                                conditionSurvival;
         bool                                                excludeNullRange;
+        bool                                                orderStatesByNum;
         
-        EigenSystem*                        theEigenSystem;                                                                     //!< Holds the eigen system
-        std::vector<double>                 c_ijk;                                                                              //!< Vector of precalculated product of eigenvectors and their inverse
-        std::vector<std::complex<double> >  cc_ijk;                                                                             //!< Vector of precalculated product of eigenvectors and thier inverse for complex case
+        EigenSystem*                                        theEigenSystem;                 //!< Holds the eigen system
+        std::vector<double>                                 c_ijk;                          //!< Vector of precalculated product of eigenvectors and their inverse
+        std::vector<std::complex<double> >                  cc_ijk;                         //!< Vector of precalculated product of eigenvectors and thier inverse for complex case
         
         // members
-        RbVector<RbVector<double> >            dispersalRates;
-        std::vector<double>                    extirpationRates;
-        std::vector<double>                    rangeSize;
+        RbVector<RbVector<double> >                         dispersalRates;
+        std::vector<double>                                 extirpationRates;
+        std::vector<double>                                 rangeSize;
+        MatrixReal                                          cladogeneticMatrix;
+        double                                              birthRate;
+        bool                                                useCladogenesis;
+        size_t                                              maxRangeSize;
     };
     
 }
