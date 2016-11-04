@@ -34,7 +34,8 @@
 using namespace RevLanguage;
 
 /* Default constructor */
-Real::Real(void) : ModelObject<double>( new double(0.0) ) {
+Real::Real(void) : ModelObject<double>( new double(0.0) )
+{
 
     setGuiVariableName("Real Number");
     setGuiLatexSymbol("R");
@@ -42,7 +43,8 @@ Real::Real(void) : ModelObject<double>( new double(0.0) ) {
 
 
 /* Construct from double */
-Real::Real(double v) : ModelObject<double>( new double(v) ) {
+Real::Real(double v) : ModelObject<double>( new double(v) )
+{
 
     setGuiVariableName("Real Number");
     setGuiLatexSymbol("R");
@@ -50,7 +52,8 @@ Real::Real(double v) : ModelObject<double>( new double(v) ) {
 
 
 /* Construct from double */
-Real::Real( RevBayesCore::TypedDagNode<double> *v ) : ModelObject<double>( v ) {
+Real::Real( RevBayesCore::TypedDagNode<double> *v ) : ModelObject<double>( v )
+{
 
     setGuiVariableName("Real Number");
     setGuiLatexSymbol("R");
@@ -58,7 +61,8 @@ Real::Real( RevBayesCore::TypedDagNode<double> *v ) : ModelObject<double>( v ) {
 
 
 /* Construct from int */
-Real::Real(int v) : ModelObject<double>( new double(v) ) {
+Real::Real(int v) : ModelObject<double>( new double(v) )
+{
 
     setGuiVariableName("Real Number");
     setGuiLatexSymbol("R");
@@ -66,7 +70,8 @@ Real::Real(int v) : ModelObject<double>( new double(v) ) {
 
 
 /* Copy Construct */
-Real::Real(const Real& x) : ModelObject<double>( x ) {
+Real::Real(const Real& x) : ModelObject<double>( x )
+{
     
     setGuiVariableName("Real Number");
     setGuiLatexSymbol("R");
@@ -85,10 +90,14 @@ RevObject* Real::add( const RevObject& rhs ) const
 {
     
     if ( rhs.getTypeSpec().isDerivedOf( Real::getClassTypeSpec() ) )
+    {
         return add( static_cast<const Real&>( rhs ) );
+    }
     
     if ( rhs.getTypeSpec().isDerivedOf(  Integer::getClassTypeSpec() ) )
+    {
         return add( static_cast<const Integer&>( rhs ) );
+    }
     
     return ModelObject<double>::add( rhs );
 }
@@ -128,7 +137,12 @@ Real* Real::add(const Integer &rhs) const
 }
 
 
-/** Clone object */
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'b'.
+ *
+ * \return A new copy of the process.
+ */
 Real* Real::clone(void) const {
 
 	return new Real(*this);
@@ -136,7 +150,8 @@ Real* Real::clone(void) const {
 
 
 /** Convert to type. The caller manages the returned object. */
-RevObject* Real::convertTo( const TypeSpec& type ) const {
+RevObject* Real::convertTo( const TypeSpec& type ) const
+{
 
     if ( type == RlBoolean::getClassTypeSpec() )
         return new RlBoolean(dagNode->getValue() == 0.0);
@@ -152,7 +167,7 @@ RevObject* Real::convertTo( const TypeSpec& type ) const {
     if ( type == RlString::getClassTypeSpec() ) 
     {
         std::ostringstream o;
-        printValue( o );
+        printValue( o, true );
         return new RlString( o.str() );
     }
 
@@ -237,18 +252,18 @@ const std::string& Real::getClassType(void) {
 /** Get class type spec describing type of object */
 const TypeSpec& Real::getClassTypeSpec(void) { 
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( RevObject::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( RevObject::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 
 /** Get type spec */
 const TypeSpec& Real::getTypeSpec( void ) const {
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }
 
 
@@ -264,20 +279,25 @@ void Real::increment( void )
 
 
 /** Is convertible to type? */
-bool Real::isConvertibleTo(const TypeSpec& type, bool once) const {
+double Real::isConvertibleTo(const TypeSpec& type, bool once) const {
 
     if (type == RlBoolean::getClassTypeSpec())
-        return true;
+        return 0.6;
+    
     if (once && type == RealPos::getClassTypeSpec() && dagNode->getValue() > 0.0)
-        return true;
+        return 0.4;
+    
     if (once && type == Probability::getClassTypeSpec() && dagNode->getValue() >= 0.0 && dagNode->getValue() <= 1.0)
-        return true;
+        return 0.1;
+    
     if ( once && type == Integer::getClassTypeSpec() && dagNode->getValue() == int(dagNode->getValue()) )
-        return true;
+        return 0.3;
+    
     if ( once && type == Natural::getClassTypeSpec() && dagNode->getValue() >= 0.0 && dagNode->getValue() == int(dagNode->getValue()) )
-        return true;
+        return 0.2;
+    
     if ( type == RlString::getClassTypeSpec() )
-        return true;
+        return 0.5;
 
     return RevObject::isConvertibleTo(type, once);
 }
@@ -335,23 +355,6 @@ Real* Real::multiply(const Integer &rhs) const
     Real *n = new Real( dagNode->getValue() * rhs.getValue() );
     
     return n;
-}
-
-
-
-/** Print value for user */
-void Real::printValue(std::ostream &o) const {
-
-    long previousPrecision = o.precision();
-    std::ios_base::fmtflags previousFlags = o.flags();
-
-    std::fixed( o );
-    o.precision( 3 );
-
-    dagNode->printValue( o );
-
-    o.setf( previousFlags );
-    o.precision( previousPrecision );
 }
 
 

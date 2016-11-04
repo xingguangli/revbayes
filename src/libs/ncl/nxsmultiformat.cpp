@@ -458,12 +458,13 @@ void  MultiFormatReader::readPhylipData(
 		NxsDiscreteStateRow & row = *mIt++;
 		for (unsigned j = 0; j < n_char; ++j)
 			{
-			bool readChar = false;
+			bool readDiscreteChar = false;
 			for (;;)
 				{
 				const char c = ftcb.current();
 				if (isgraph(c))
 					{
+					/* Digits must be allowed in order to read standard state characters
 					if (isdigit(c))// I don't know why PHYLIP allows digits in the midst of the sequence, but it seems to.
 						{
 						err << "Number encountered (and ignored) within sequence for taxon " << n;
@@ -471,7 +472,7 @@ void  MultiFormatReader::readPhylipData(
 						err.clear();
 						}
 					else
-						{
+						{*/
 						const NxsDiscreteStateCell stateCode = dm.GetStateCodeStored(c);
 						if (stateCode == NXS_INVALID_STATE_CODE)
 							{
@@ -493,12 +494,12 @@ void  MultiFormatReader::readPhylipData(
 							}
 						else
 							row[j] = stateCode;
-						readChar = true;
+						readDiscreteChar = true;
 						}
-					}
+					//}
 				if (!ftcb.advance())
 					goto funcExit;
-				if (readChar)
+				if (readDiscreteChar)
 					break;
 				}
 			}
@@ -592,6 +593,7 @@ void  MultiFormatReader::readInterleavedPhylipData(
 							throw NxsException(err, ftcb.position(), ftcb.line(), ftcb.column());
 							}
 						}
+					/* Digits must be allowed in order to read standard state characters
 					if (isdigit(c))// I don't know why PHYLIP allows digits in the midst of the sequence, but it seems to.
 						{
 						std::list<std::string>::const_iterator nIt = taxaNames.begin();
@@ -602,7 +604,7 @@ void  MultiFormatReader::readInterleavedPhylipData(
 						err.clear();
 						}
 					else
-						{
+						{*/
 						const NxsDiscreteStateCell stateCode = dm.GetStateCodeStored(c);
 						if (stateCode == NXS_INVALID_STATE_CODE)
 							{
@@ -629,7 +631,7 @@ void  MultiFormatReader::readInterleavedPhylipData(
 							row[j] = stateCode;
 						j++;
 						}
-					}
+					//}
 				else if (c == '\r' || c == '\n')
 					{
 					if (i == 0)

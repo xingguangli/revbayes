@@ -1,13 +1,5 @@
-//
-//  GeographyRateModifier.h
-//  rb_mlandis
-//
-//  Created by Michael Landis on 8/8/13.
-//  Copyright (c) 2013 Michael Landis. All rights reserved.
-//
-
-#ifndef __rb_mlandis__GeographyRateModifier__
-#define __rb_mlandis__GeographyRateModifier__
+#ifndef GeographyRateModifier_H
+#define GeographyRateModifier_H
 
 #include "AbstractCharacterHistoryRateModifier.h"
 #include "TimeAtlas.h"
@@ -29,7 +21,9 @@ namespace RevBayesCore
         double                              computeRateModifier(const TopologyNode& node, std::vector<CharacterEvent*> curState, CharacterEvent* newState, double age = 0.0);
 //        double                              computeRateModifier_test(std::vector<CharacterEvent*> curState, CharacterEvent* newState, double age=0.0);
         double                              computeSiteRateModifier(const TopologyNode& node, CharacterEvent* curState, CharacterEvent* newState, double age=0.0);
-        double                              computeSiteRateModifier(const TopologyNode& node, unsigned curState, unsigned newState, unsigned charIdx=0, double age=0.0);
+        double                              computeSiteRateModifier(const TopologyNode& node, size_t curState, size_t newState, size_t charIdx=0, double age=0.0);
+        unsigned                            getNumAvailableAreas(const TopologyNode& node, std::vector<CharacterEvent*> curState, double age=0.0);
+        unsigned                            getNumEmigratableAreas(const TopologyNode& node, std::vector<CharacterEvent*> curState, double age=0.0);
         void                                setDistancePower(double dp, bool upd=true);
         const std::vector<double>&          getGeographicDistancePowers(void) const;
         void                                setGeographicDistancePowers(const std::vector<double>& dp);
@@ -39,9 +33,12 @@ namespace RevBayesCore
         const std::vector<double>&          getExtinctionValues(void) const;
         const std::vector<double>&          getAvailableAreaVector(void) const;
         const std::vector<double>&          getAdjacentAreaVector(void) const;
+        const std::vector<std::set<size_t> >&      getAdjacentAreaSet(void) const;
+        const bool                          getUseAreaAvailable(void) const;
+        const bool                          getUseAreaAdjacency(void) const;
         
         void                                update(void);
-        GeographyRateModifier*     clone(void) const;
+        GeographyRateModifier*              clone(void) const;
         void                                print(std::vector<std::vector<double> > m);
         void                                printAll(void);
         
@@ -101,4 +98,4 @@ namespace RevBayesCore
     std::ostream& operator<<(std::ostream& o, const GeographyRateModifier& x);
 }
 
-#endif /* defined(__rb_mlandis__GeographyRateModifier__) */
+#endif

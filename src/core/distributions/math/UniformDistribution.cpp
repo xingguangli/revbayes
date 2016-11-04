@@ -4,13 +4,15 @@
 
 using namespace RevBayesCore;
 
-UniformDistribution::UniformDistribution(const TypedDagNode<double> *mi, const TypedDagNode<double> *ma) : ContinuousDistribution( new double( 0.0 ) ), min( mi ), max( ma ) {
+UniformDistribution::UniformDistribution(const TypedDagNode<double> *mi, const TypedDagNode<double> *ma) : ContinuousDistribution( new double( 0.0 ) ),
+    min( mi ),
+    max( ma )
+{
+    
+    addParameter( min );
+    addParameter( max );
     
     *value = RbStatistics::Uniform::rv(min->getValue(), max->getValue(), *GLOBAL_RNG);
-}
-
-
-UniformDistribution::UniformDistribution(const UniformDistribution &n) : ContinuousDistribution( n ), min( n.min ), max( n.max ) {
 }
 
 
@@ -49,34 +51,23 @@ double UniformDistribution::getMin( void ) const {
 }
 
 
-double UniformDistribution::quantile(double p) const {
+double UniformDistribution::quantile(double p) const
+{
     
     return RbStatistics::Uniform::quantile( min->getValue(), max->getValue(), p);
 }
 
 
-void UniformDistribution::redrawValue( void ) {
+void UniformDistribution::redrawValue( void )
+{
     
     *value = RbStatistics::Uniform::rv(min->getValue(), max->getValue(), *GLOBAL_RNG);
     
 }
 
-
-/** Get the parameters of the distribution */
-std::set<const DagNode*> UniformDistribution::getParameters( void ) const
-{
-    std::set<const DagNode*> parameters;
-    
-    parameters.insert( min );
-    parameters.insert( max );
-    
-    parameters.erase( NULL );
-    return parameters;
-}
-
-
 /** Swap a parameter of the distribution */
-void UniformDistribution::swapParameter(const DagNode *oldP, const DagNode *newP) {
+void UniformDistribution::swapParameterInternal(const DagNode *oldP, const DagNode *newP)
+{
     
     if (oldP == min) 
     {

@@ -3,11 +3,11 @@
 using namespace RevBayesCore;
 
 
-
 /**
- * Default constructor
+ * Default constructor.
  */
-Taxon::Taxon(void) :
+Taxon::Taxon( void ) :
+    age( 0 ),
     date(  ),
     name( "" ),
     speciesName( "" )
@@ -21,10 +21,11 @@ Taxon::Taxon(void) :
  *
  * \param[in]    n     The name of the taxon.
  */
-Taxon::Taxon(const std::string &n, const std::string &sn) :
+Taxon::Taxon(const std::string &n) :
+    age( 0 ),
     date(  ),
     name( n ),
-    speciesName( sn )
+    speciesName( n )
 {
     
 }
@@ -47,6 +48,16 @@ bool Taxon::operator==(const RevBayesCore::Taxon &t) const
         return false;
     }
     
+    if ( date != t.date)
+    {
+        return false;
+    }
+    
+    if ( age != t.age)
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -86,9 +97,10 @@ bool Taxon::operator<(const RevBayesCore::Taxon &t) const
         return false;
     }
     
-    // by default return true.
-    return true;
+    // by default return false.
+    return false;
 }
+
 
 
 /**
@@ -98,6 +110,39 @@ bool Taxon::operator<=(const RevBayesCore::Taxon &t) const
 {
     
     return operator<(t) || operator==(t);
+}
+
+
+/**
+ * Greater-than operator.
+ * We check first the species name and then the indidivuals name.
+ */
+bool Taxon::operator>(const RevBayesCore::Taxon &t) const
+{
+    
+    return operator<=(t) == false;
+}
+
+
+
+/**
+ * Greater-than or equals operator.
+ */
+bool Taxon::operator>=(const RevBayesCore::Taxon &t) const
+{
+    
+    return operator>(t) || operator==(t);
+}
+
+
+/**
+ * Get the age for this taxon.
+ *
+ * \return    The age.
+ */
+double Taxon::getAge( void ) const
+{
+    return age;
 }
 
 
@@ -135,6 +180,17 @@ const std::string& Taxon::getSpeciesName( void ) const
 
 
 /**
+ * Set the age for this taxon.
+ *
+ * \param[in]    a     The age.
+ */
+void Taxon::setAge(double a)
+{
+    age = a;
+}
+
+
+/**
  * Set the date info for this taxon.
  *
  * \param[in]    d     The date.
@@ -167,7 +223,11 @@ void Taxon::setSpeciesName( const std::string &sn )
 }
 
 
-std::ostream& RevBayesCore::operator<<(std::ostream& o, const Taxon& x) {
-    o << x.getName() << ":" << x.getSpeciesName() << ":" << x.getDate();    
+std::ostream& RevBayesCore::operator<<(std::ostream& o, const Taxon& x)
+{
+    // Sebastian: We will not write out the species name or date anymore
+    // These info need to be queried specifically
+//    o << x.getName() << ":" << x.getSpeciesName() << ":" << x.getDate();
+    o << x.getName();
     return o;
 }

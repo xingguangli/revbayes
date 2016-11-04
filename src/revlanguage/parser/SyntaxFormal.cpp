@@ -31,11 +31,13 @@ SyntaxFormal::SyntaxFormal( const std::string& label, SyntaxElement* defaultVal 
     
     // Make argument rule from the formal specification
     if ( defaultVal == NULL )
-        argRule = new ArgumentRule( label, typeSpec, ArgumentRule::BY_REFERENCE );
+    {
+        argRule = new ArgumentRule( label, typeSpec, "", ArgumentRule::BY_REFERENCE, ArgumentRule::ANY );
+    }
     else
     {
         RevObject* defaultObj = defaultVal->evaluateContent( Workspace::userWorkspace() )->getRevObject().clone();
-        argRule = new ArgumentRule( label, typeSpec, ArgumentRule::BY_REFERENCE, ArgumentRule::ANY, defaultObj );
+        argRule = new ArgumentRule( label, typeSpec, "", ArgumentRule::BY_REFERENCE, ArgumentRule::ANY, defaultObj );
     }
 }
 
@@ -86,18 +88,29 @@ SyntaxFormal::SyntaxFormal( const std::string& type, const std::string& label, S
     {
         // Make const argument rule from element
         if ( defaultVal == NULL )
-            argRule = new ArgumentRule( label, typeSpec, ArgumentRule::BY_CONSTANT_REFERENCE );
+        {
+            argRule = new ArgumentRule( label, typeSpec, "", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY );
+        }
         else
-            argRule = new ArgumentRule( label, typeSpec, ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY, defaultObj );
+        {
+            argRule = new ArgumentRule( label, typeSpec, "", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY, defaultObj );
+        }
+        
     }
     else // if ( modifier == "dynamic" || modifier == "" )
     {
         // Make dynamic argument rule from element
         if ( defaultVal == NULL )
-            argRule = new ArgumentRule( label, typeSpec, ArgumentRule::BY_REFERENCE );
+        {
+            argRule = new ArgumentRule( label, typeSpec, "", ArgumentRule::BY_REFERENCE, ArgumentRule::ANY );
+        }
         else
-            argRule = new ArgumentRule( label, typeSpec, ArgumentRule::BY_REFERENCE, ArgumentRule::ANY, defaultObj );
+        {
+            argRule = new ArgumentRule( label, typeSpec, "", ArgumentRule::BY_REFERENCE, ArgumentRule::ANY, defaultObj );
+        }
+        
     }
+    
 }
 
 
@@ -156,25 +169,9 @@ const ArgumentRule* SyntaxFormal::getArgumentRule(void ) const
 
 
 /** Get semantic value (not applicable so return NULL) */
-RevPtr<Variable> SyntaxFormal::evaluateContent( Environment& env, bool dynamic )
+RevPtr<RevVariable> SyntaxFormal::evaluateContent( Environment& env, bool dynamic )
 {
     return NULL;
-}
-
-
-/**
- * Print info about the syntax element. Note that the language
- * grammar specification does not currently support multiple formals,
- * so there can be no more than one element in argRule.
- */
-void SyntaxFormal::printValue(std::ostream& o) const
-{
-    o << "SyntaxFormal (processed):" << std::endl;
-    o << "type        = " << argRule->getArgumentTypeSpec()[0].getType() << std::endl;
-    o << "label       = " << argRule->getArgumentLabel() << std::endl;
-    o << "defaultVal  = ";
-    argRule->getDefaultVariable().getRevObject().printValue( o );
-    o << std::endl;
 }
 
 

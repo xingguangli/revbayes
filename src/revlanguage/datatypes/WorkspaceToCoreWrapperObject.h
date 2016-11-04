@@ -35,18 +35,18 @@ namespace RevLanguage {
         static const std::string&                           getClassType(void);                                             //!< Get Rev type
         static const TypeSpec&                              getClassTypeSpec(void);                                         //!< Get class type spec
         virtual const TypeSpec&                             getTypeSpec(void) const = 0;                                    //!< Get the type spec of the instance
-        virtual void                                        printValue(std::ostream& o) const = 0;                          //!< Print value for user
         
         
         // Getters and setters
         rbType&                                             getValue(void) const;                                           //!< Get value
         void                                                setValue(const rbType& x);                                      //!< Set value
-        
+        virtual void                                        printValue(std::ostream& o, bool user) const;                                                      //!< Print value (for user)
+
     protected:
         WorkspaceToCoreWrapperObject(void);
         WorkspaceToCoreWrapperObject(rbType *v);
         WorkspaceToCoreWrapperObject(const WorkspaceToCoreWrapperObject &v);
-        
+                
         rbType*                                             value;
     };
     
@@ -88,7 +88,8 @@ RevLanguage::WorkspaceToCoreWrapperObject<rbType>::WorkspaceToCoreWrapperObject(
 
 
 template <typename rbType>
-RevLanguage::WorkspaceToCoreWrapperObject<rbType>::~WorkspaceToCoreWrapperObject() {
+RevLanguage::WorkspaceToCoreWrapperObject<rbType>::~WorkspaceToCoreWrapperObject()
+{
     
     delete value;
 }
@@ -128,9 +129,9 @@ const std::string& RevLanguage::WorkspaceToCoreWrapperObject<rbType>::getClassTy
 template <typename rlType>
 const RevLanguage::TypeSpec& RevLanguage::WorkspaceToCoreWrapperObject<rlType>::getClassTypeSpec(void) {
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( WorkspaceObject::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( WorkspaceObject::getClassTypeSpec() ) );
     
-    return revTypeSpec;
+    return rev_type_spec;
 }
 
 
@@ -154,6 +155,14 @@ void RevLanguage::WorkspaceToCoreWrapperObject<rbType>::setValue(const rbType &x
     // free memory
     delete value;
     value = new rbType( x );
+}
+
+
+template <typename rbType>
+void RevLanguage::WorkspaceToCoreWrapperObject<rbType>::printValue(std::ostream &o, bool user) const
+{
+    
+    o << value;
 }
 
 

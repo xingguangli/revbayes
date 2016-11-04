@@ -1,24 +1,3 @@
-/**
- * @file
- * This file contains the declaration of the log-normal distributed random variable class.
- * This class is derived from the stochastic node and each instance will represent a random variable
- * from a normal distribution in the model graph.
- *
- * @brief Declaration of the stochastic DAG node base class.
- *
- * (c) Copyright 2009- under GPL version 3
- * @date Last modified: $Date:$
- * @author The RevBayes Development Core Team
- * @license GPL version 3
- * @version 1.0
- * @since 2012-06-17, version 1.0
- * @interface TypedDagNode
- *
- * $Id:$
- */
-
-
-
 #ifndef LognormalDistribution_H
 #define LognormalDistribution_H
 
@@ -30,7 +9,7 @@ namespace RevBayesCore {
     class LognormalDistribution : public ContinuousDistribution {
         
     public:
-        LognormalDistribution(const TypedDagNode<double> *m, const TypedDagNode<double> *s, const TypedDagNode<double> *o);
+        LognormalDistribution(const TypedDagNode<double> *m, const TypedDagNode<double> *s);
         virtual                                            ~LognormalDistribution(void);                                                  //!< Virtual destructor
         
         // public member functions
@@ -42,16 +21,15 @@ namespace RevBayesCore {
         double                                              quantile(double p) const;                                                       //!< Qu
         void                                                redrawValue(void);
         
+    protected:
         // Parameter management functions
-        std::set<const DagNode*>                            getParameters(void) const;                                          //!< Return parameters
-        void                                                swapParameter(const DagNode *oldP, const DagNode *newP);            //!< Swap a parameter
+        void                                                swapParameterInternal(const DagNode *oldP, const DagNode *newP);            //!< Swap a parameter
         
     private:
         
         // members
-        const TypedDagNode<double>*                          mean;
-        const TypedDagNode<double>*                          sd;
-        const TypedDagNode<double>*                          offset;
+        const TypedDagNode<double>*                         mean;
+        const TypedDagNode<double>*                         sd;
         
     };
     

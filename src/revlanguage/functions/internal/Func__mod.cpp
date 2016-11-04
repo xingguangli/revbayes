@@ -9,7 +9,7 @@
 
 using namespace RevLanguage;
 
-Func__mod::Func__mod() : Function()
+Func__mod::Func__mod() : TypedFunction<Natural>()
 {
     
 }
@@ -22,19 +22,15 @@ Func__mod* Func__mod::clone( void ) const
 }
 
 
-/** Execute function: We rely on getValue or overloaded push_back to provide functionality */
-RevPtr<Variable> Func__mod::execute( void ) {
+RevBayesCore::TypedFunction<int>* Func__mod::createFunction( void ) const
+{
     
     const RevBayesCore::TypedDagNode<int>* leftVal = static_cast<const Natural &>( args[0].getVariable()->getRevObject() ).getDagNode();
     const RevBayesCore::TypedDagNode<int>* rightVal = static_cast<const Natural &>( args[1].getVariable()->getRevObject() ).getDagNode();
     
     RevBayesCore::ModuloFunction *func = new RevBayesCore::ModuloFunction( leftVal, rightVal );
     
-    DeterministicNode<int> *detNode = new DeterministicNode<int>("", func, this->clone());
-
-    Natural *theBool = new Natural( detNode );
-    
-    return new Variable( theBool );
+    return func;
     
 }
 
@@ -44,14 +40,14 @@ const ArgumentRules& Func__mod::getArgumentRules( void ) const
 {
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet )
+    if ( !rules_set )
     {
         
-        argumentRules.push_back( new ArgumentRule( "x", Natural::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        argumentRules.push_back( new ArgumentRule( "y", Natural::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        rulesSet = true;
+        argumentRules.push_back( new ArgumentRule( "x", Natural::getClassTypeSpec(), "The left hand side variable." , ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        argumentRules.push_back( new ArgumentRule( "y", Natural::getClassTypeSpec(), "The right hand side variable.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        rules_set = true;
     }
     
     return argumentRules;
@@ -72,9 +68,21 @@ const std::string& Func__mod::getClassType(void)
 const TypeSpec& Func__mod::getClassTypeSpec(void)
 {
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec;
+	return rev_type_spec;
+}
+
+
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func__mod::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "mod";
+    
+    return f_name;
 }
 
 
@@ -82,16 +90,8 @@ const TypeSpec& Func__mod::getClassTypeSpec(void)
 const TypeSpec& Func__mod::getTypeSpec( void ) const
 {
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
-}
-
-
-/** Get return type */
-const TypeSpec& Func__mod::getReturnType( void ) const
-{
-    
-    return Natural::getClassTypeSpec();
+    return type_spec;
 }
 

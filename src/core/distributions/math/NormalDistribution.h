@@ -1,24 +1,3 @@
-/**
- * @file
- * This file contains the declaration of the normally distributed random variable class.
- * This class is derived from the stochastic node and each instance will represent a random variable
- * from a normal distribution in the model graph.
- *
- * @brief Declaration of the stochastic DAG node base class.
- *
- * (c) Copyright 2009- under GPL version 3
- * @date Last modified: $Date:$
- * @author The RevBayes Development Core Team
- * @license GPL version 3
- * @version 1.0
- * @since 2012-06-17, version 1.0
- * @interface TypedDagNode
- *
- * $Id:$
- */
-
-
-
 #ifndef NormalDistribution_H
 #define NormalDistribution_H
 
@@ -31,7 +10,6 @@ namespace RevBayesCore {
         
     public:
         NormalDistribution(const TypedDagNode<double> *m, const TypedDagNode<double> *s);
-        NormalDistribution(const NormalDistribution &n);                                                                                //!< Copy constructor
         virtual                                            ~NormalDistribution(void);                                                   //!< Virtual destructor
         
         // public member functions
@@ -43,9 +21,9 @@ namespace RevBayesCore {
         double                                              quantile(double p) const;                                                       //!< Qu
         void                                                redrawValue(void);
         
+    protected:
         // Parameter management functions
-        std::set<const DagNode*>                            getParameters(void) const;                                          //!< Return parameters
-        void                                                swapParameter(const DagNode *oldP, const DagNode *newP);            //!< Swap a parameter
+        void                                                swapParameterInternal(const DagNode *oldP, const DagNode *newP);            //!< Swap a parameter
         
     private:
         

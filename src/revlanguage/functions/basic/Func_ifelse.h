@@ -18,29 +18,37 @@
 #ifndef Func_ifelse_H
 #define Func_ifelse_H
 
-#include "Function.h"
+#include "RlTypedFunction.h"
 
 namespace RevLanguage {
     
     template <typename valType>
-    class Func_ifelse :  public Function {
+    class Func_ifelse : public TypedFunction<valType> {
         
     public:
         Func_ifelse();
         
         // Basic utility functions
-        Func_ifelse*                clone(void) const;                                          //!< Clone the object
-        static const std::string&   getClassType(void);                                         //!< Get Rev type
-        static const TypeSpec&      getClassTypeSpec(void);                                     //!< Get class type spec
-        const TypeSpec&             getTypeSpec(void) const;                                    //!< Get language type of the object
+        Func_ifelse*                                                    clone(void) const;                                          //!< Clone the object
+        static const std::string&                                       getClassType(void);                                         //!< Get Rev type
+        static const TypeSpec&                                          getClassTypeSpec(void);                                     //!< Get class type spec
+        std::string                                                     getFunctionName(void) const;
+        const TypeSpec&                                                 getTypeSpec(void) const;                                    //!< Get language type of the object
         
         // Regular functions
-        const ArgumentRules&        getArgumentRules(void) const;                               //!< Get argument rules
-        const TypeSpec&             getReturnType(void) const;                                  //!< Get type of return value
+        RevBayesCore::TypedFunction< typename valType::valueType>*      createFunction(void) const;                                 //!< Create a function object
+        const ArgumentRules&                                            getArgumentRules(void) const;                               //!< Get argument rules
         
+    protected:
         
-        RevPtr<Variable>            execute(void);                                              //!< Execute function
-        
+        std::vector<std::string>                                        getHelpAuthor(void) const;                                  //!< Get the author(s) of this function
+        std::vector<std::string>                                        getHelpDescription(void) const;                             //!< Get the description for this function
+        std::vector<std::string>                                        getHelpDetails(void) const;                                 //!< Get the more detailed description of the function
+        std::string                                                     getHelpExample(void) const;                                 //!< Get an executable and instructive example
+        std::vector<RevBayesCore::RbHelpReference>                      getHelpReferences(void) const;                              //!< Get some references/citations for this function
+        std::vector<std::string>                                        getHelpSeeAlso(void) const;                                 //!< Get suggested other functions
+        std::string                                                     getHelpTitle(void) const;                                   //!< Get the title of this help entry
+
     };
     
 }
@@ -57,7 +65,7 @@ namespace RevLanguage {
 
 
 template <typename valType>
-RevLanguage::Func_ifelse<valType>::Func_ifelse() : Function()
+RevLanguage::Func_ifelse<valType>::Func_ifelse() : TypedFunction<valType>()
 {
     
 }
@@ -71,22 +79,17 @@ RevLanguage::Func_ifelse<valType>* RevLanguage::Func_ifelse<valType>::clone( voi
 }
 
 
-/** Execute function: We rely on getValue and overloaded push_back to provide functionality */
 template <typename valType>
-RevLanguage::RevPtr<RevLanguage::Variable> RevLanguage::Func_ifelse<valType>::execute( void )
+RevBayesCore::TypedFunction< typename valType::valueType >* RevLanguage::Func_ifelse<valType>::createFunction( void ) const
 {
     
-    RevBayesCore::TypedDagNode<bool>                        *c = static_cast<const RlBoolean &>( args[0].getVariable()->getRevObject() ).getDagNode();
-    RevBayesCore::TypedDagNode<typename valType::valueType> *a = static_cast<const valType &>( args[1].getVariable()->getRevObject() ).getDagNode();
-    RevBayesCore::TypedDagNode<typename valType::valueType> *b = static_cast<const valType &>( args[2].getVariable()->getRevObject() ).getDagNode();
+    RevBayesCore::TypedDagNode<RevBayesCore::Boolean>       *c = static_cast<const RlBoolean &>( this->args[0].getVariable()->getRevObject() ).getDagNode();
+    RevBayesCore::TypedDagNode<typename valType::valueType> *a = static_cast<const valType &>( this->args[1].getVariable()->getRevObject() ).getDagNode();
+    RevBayesCore::TypedDagNode<typename valType::valueType> *b = static_cast<const valType &>( this->args[2].getVariable()->getRevObject() ).getDagNode();
     
     RevBayesCore::IfElseFunction<typename valType::valueType> *func = new RevBayesCore::IfElseFunction<typename valType::valueType>( c, a, b );
     
-    DeterministicNode< typename valType::valueType > *detNode = new DeterministicNode< typename valType::valueType >("", func, this->clone());
-    
-    valType *retValue = new valType( detNode );
-    
-    return new Variable( retValue );
+    return func;
 }
 
 
@@ -96,15 +99,15 @@ const RevLanguage::ArgumentRules& RevLanguage::Func_ifelse<valType>::getArgument
 {
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet )
+    if ( !rules_set )
     {
         
-        argumentRules.push_back( new ArgumentRule( "condition", RlBoolean::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        argumentRules.push_back( new ArgumentRule( "a"        , valType::getClassTypeSpec()  , ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        argumentRules.push_back( new ArgumentRule( "b"        , valType::getClassTypeSpec()  , ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        rulesSet = true;
+        argumentRules.push_back( new ArgumentRule( "condition", RlBoolean::getClassTypeSpec(), "A variable representing the condition of the if-else statement.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        argumentRules.push_back( new ArgumentRule( "a"        , valType::getClassTypeSpec()  , "The value if the statement is true.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        argumentRules.push_back( new ArgumentRule( "b"        , valType::getClassTypeSpec()  , "The value if the statement is false.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        rules_set = true;
     }
     
     return argumentRules;
@@ -127,10 +130,130 @@ template <typename valType>
 const RevLanguage::TypeSpec& RevLanguage::Func_ifelse<valType>::getClassTypeSpec(void)
 {
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec;
+	return rev_type_spec;
 }
+
+
+/**
+ * Get the primary Rev name for this function.
+ */
+template <typename valType>
+std::string RevLanguage::Func_ifelse<valType>::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "ifelse";
+    
+    return f_name;
+}
+
+
+/**
+ * Get the author(s) of this function so they can receive credit (and blame) for it.
+ */
+template <typename valType>
+std::vector<std::string> RevLanguage::Func_ifelse<valType>::getHelpAuthor(void) const
+{
+    // create a vector of authors for this function
+    std::vector<std::string> authors;
+    authors.push_back( "Sebastian Hoehna" );
+    
+    return authors;
+}
+
+
+/**
+ * Get the (brief) description for this function
+ */
+template <typename valType>
+std::vector<std::string> RevLanguage::Func_ifelse<valType>::getHelpDescription(void) const
+{
+    // create a variable for the description of the function
+    std::vector<std::string> descriptions;
+    descriptions.push_back( "If the expression is true, then the function returns the first value, otherwise the second value." );
+    
+    return descriptions;
+}
+
+
+/**
+ * Get the more detailed description of the function
+ */
+template <typename valType>
+std::vector<std::string> RevLanguage::Func_ifelse<valType>::getHelpDetails(void) const
+{
+    // create a variable for the description of the function
+    std::vector<std::string> details;
+    details.push_back( "The ifelse function is important when the value of a variable should deterministically change during an analysis depending on other variables. Standard if-else statements are not dynamically re-evaluated." );
+    
+    return details;
+}
+
+
+/**
+ * Get an executable and instructive example.
+ * These example should help the users to show how this function works but
+ * are also used to test if this function still works.
+ */
+template <typename valType>
+std::string RevLanguage::Func_ifelse<valType>::getHelpExample(void) const
+{
+    // create an example as a single string variable.
+    std::string example = "";
+    
+    example += "a <- 1\n";
+    example += "b := ifelse( a == 1, 10, -10 )\n";
+    example += "b\n";
+    example += "\n";
+    example += "a <- 2\n";
+    example += "b\n";
+    
+    return example;
+}
+
+
+/**
+ * Get some references/citations for this function
+ *
+ */
+template <typename valType>
+std::vector<RevBayesCore::RbHelpReference> RevLanguage::Func_ifelse<valType>::getHelpReferences(void) const
+{
+    // create an entry for each reference
+    std::vector<RevBayesCore::RbHelpReference> references;
+    
+    
+    return references;
+}
+
+
+/**
+ * Get the names of similar and suggested other functions
+ */
+template <typename valType>
+std::vector<std::string> RevLanguage::Func_ifelse<valType>::getHelpSeeAlso(void) const
+{
+    // create an entry for each suggested function
+    std::vector<std::string> see_also;
+    
+    
+    return see_also;
+}
+
+
+/**
+ * Get the title of this help entry
+ */
+template <typename valType>
+std::string RevLanguage::Func_ifelse<valType>::getHelpTitle(void) const
+{
+    // create a title variable
+    std::string title = "If-else statement as a function";
+    
+    return title;
+}
+
 
 
 /** Get type spec */
@@ -138,18 +261,9 @@ template <typename valType>
 const RevLanguage::TypeSpec& RevLanguage::Func_ifelse<valType>::getTypeSpec( void ) const
 {
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
-}
-
-
-/** Get return type */
-template <typename valType>
-const RevLanguage::TypeSpec& RevLanguage::Func_ifelse<valType>::getReturnType( void ) const
-{
-    
-    return valType::getClassTypeSpec();
+    return type_spec;
 }
 
 

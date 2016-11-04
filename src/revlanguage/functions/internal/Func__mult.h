@@ -18,7 +18,7 @@
 #ifndef Func_mult_H
 #define Func_mult_H
 
-#include "Function.h"
+#include "RlTypedFunction.h"
 
 #include <map>
 #include <string>
@@ -26,23 +26,22 @@
 namespace RevLanguage {
     
     template <typename firstValType, typename secondValType, typename retType>
-    class Func__mult :  public Function {
+    class Func__mult : public TypedFunction<retType> {
         
     public:
         Func__mult( void );
         
         // Basic utility functions
-        Func__mult*                                     clone(void) const;                                                              //!< Clone the object
-        static const std::string&                       getClassType(void);                                                             //!< Get Rev type
-        static const TypeSpec&                          getClassTypeSpec(void);                                                         //!< Get class type spec
-        const TypeSpec&                                 getTypeSpec(void) const;                                                        //!< Get the type spec of the instance
-        
+        Func__mult*                                                     clone(void) const;                              //!< Clone the object
+        static const std::string&                                       getClassType(void);                             //!< Get Rev type
+        static const TypeSpec&                                          getClassTypeSpec(void);                         //!< Get class type spec
+        std::string                                                     getFunctionName(void) const;                    //!< Get the primary name of the function in Rev
+        const TypeSpec&                                                 getTypeSpec(void) const;                        //!< Get the type spec of the instance
+        bool                                                            isInternal(void) const { return true; }         //!< Is this an internal function?
+
         // Function functions you have to override
-        RevPtr<Variable>                                execute(void);                                                                  //!< Execute function
-        const ArgumentRules&                            getArgumentRules(void) const;                                                   //!< Get argument rules
-        const TypeSpec&                                 getReturnType(void) const;                                                      //!< Get type of return value
-        
-    private:
+        RevBayesCore::TypedFunction<typename retType::valueType>*       createFunction(void) const ;                    //!< Create a new internal function object
+        const ArgumentRules&                                            getArgumentRules(void) const;                   //!< Get argument rules
         
     };
     
@@ -54,12 +53,17 @@ namespace RevLanguage {
 
 /** default constructor */
 template <typename firstValType, typename secondValType, typename retType>
-RevLanguage::Func__mult<firstValType, secondValType, retType>::Func__mult( void ) : Function( ) {
+RevLanguage::Func__mult<firstValType, secondValType, retType>::Func__mult( void ) : TypedFunction<retType>( ) {
     
 }
 
 
-/** Clone object */
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'b'.
+ *
+ * \return A new copy of the process.
+ */
 template <typename firstValType, typename secondValType, typename retType>
 RevLanguage::Func__mult<firstValType, secondValType, retType>* RevLanguage::Func__mult<firstValType, secondValType, retType>::clone( void ) const {
     
@@ -68,33 +72,31 @@ RevLanguage::Func__mult<firstValType, secondValType, retType>* RevLanguage::Func
 
 
 template <typename firstValType, typename secondValType, typename retType>
-RevLanguage::RevPtr<RevLanguage::Variable> RevLanguage::Func__mult<firstValType, secondValType, retType>::execute() {
+RevBayesCore::TypedFunction< typename retType::valueType >* RevLanguage::Func__mult<firstValType, secondValType, retType>::createFunction( void ) const
+{
     
     RevBayesCore::TypedDagNode<typename firstValType::valueType>* firstArg = static_cast<const firstValType &>( this->args[0].getVariable()->getRevObject() ).getDagNode();
     RevBayesCore::TypedDagNode<typename secondValType::valueType>* secondArg = static_cast<const secondValType &>( this->args[1].getVariable()->getRevObject() ).getDagNode();
     RevBayesCore::BinaryMultiplication<typename firstValType::valueType, typename secondValType::valueType, typename retType::valueType> *func = new RevBayesCore::BinaryMultiplication<typename firstValType::valueType, typename secondValType::valueType, typename retType::valueType>(firstArg, secondArg);
-
-    DeterministicNode<typename retType::valueType> *detNode = new DeterministicNode<typename retType::valueType>("", func, this->clone());
     
-    retType* value = new retType( detNode );
-    
-    return new Variable( value );
+    return func;
 }
 
 
 /* Get argument rules */
 template <typename firstValType, typename secondValType, typename retType>
-const RevLanguage::ArgumentRules& RevLanguage::Func__mult<firstValType, secondValType, retType>::getArgumentRules( void ) const {
+const RevLanguage::ArgumentRules& RevLanguage::Func__mult<firstValType, secondValType, retType>::getArgumentRules( void ) const
+{
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet )
+    if ( !rules_set )
     {
         
-        argumentRules.push_back( new ArgumentRule( "first" , firstValType::getClassTypeSpec() , ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        argumentRules.push_back( new ArgumentRule( "second", secondValType::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        rulesSet = true;
+        argumentRules.push_back( new ArgumentRule( "first" , firstValType::getClassTypeSpec() , "The left hand side variable.",  ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        argumentRules.push_back( new ArgumentRule( "second", secondValType::getClassTypeSpec(), "The right hand side variable.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        rules_set = true;
     }
     
     return argumentRules;
@@ -102,7 +104,8 @@ const RevLanguage::ArgumentRules& RevLanguage::Func__mult<firstValType, secondVa
 
 
 template <typename firstValType, typename secondValType, typename retType>
-const std::string& RevLanguage::Func__mult<firstValType, secondValType, retType>::getClassType(void) { 
+const std::string& RevLanguage::Func__mult<firstValType, secondValType, retType>::getClassType(void)
+{
     
     static std::string revType = "Func__mult<" + firstValType::getClassType() + "," + secondValType::getClassType() + "," + retType::getClassType() + ">";
     
@@ -111,30 +114,35 @@ const std::string& RevLanguage::Func__mult<firstValType, secondValType, retType>
 
 /* Get class type spec describing type of object */
 template <typename firstValType, typename secondValType, typename retType>
-const RevLanguage::TypeSpec& RevLanguage::Func__mult<firstValType, secondValType, retType>::getClassTypeSpec(void) { 
+const RevLanguage::TypeSpec& RevLanguage::Func__mult<firstValType, secondValType, retType>::getClassTypeSpec(void)
+{
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 
-/* Get return type */
+/**
+ * Get the primary Rev name for this function.
+ */
 template <typename firstValType, typename secondValType, typename retType>
-const RevLanguage::TypeSpec& RevLanguage::Func__mult<firstValType, secondValType, retType>::getReturnType( void ) const {
+std::string RevLanguage::Func__mult<firstValType, secondValType, retType>::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "mul";
     
-    static TypeSpec returnTypeSpec = retType::getClassTypeSpec();
-    
-    return returnTypeSpec;
+    return f_name;
 }
 
 
 template <typename firstValType, typename secondValType, typename retType>
-const RevLanguage::TypeSpec& RevLanguage::Func__mult<firstValType, secondValType, retType>::getTypeSpec( void ) const {
+const RevLanguage::TypeSpec& RevLanguage::Func__mult<firstValType, secondValType, retType>::getTypeSpec( void ) const
+{
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }
 
 #endif

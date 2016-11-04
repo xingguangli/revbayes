@@ -1,6 +1,7 @@
 #include "RlBoolean.h"
 #include "Integer.h"
 #include "Natural.h"
+#include "Probability.h"
 #include "RealPos.h"
 #include "Real.h"
 #include "RbException.h"
@@ -99,35 +100,54 @@ Integer* Integer::add(const Integer &rhs) const
 }
 
 
-/** Clone object */
-Integer* RevLanguage::Integer::clone(void) const {
+/** 
+ * Clone object 
+ */
+Integer* RevLanguage::Integer::clone(void) const
+{
 
 	return new Integer(*this);
 }
 
 
-/** Convert to type. The caller manages the returned object. */
-RevObject* Integer::convertTo( const TypeSpec& type ) const {
+/** 
+ * Convert to type. The caller manages the returned object. 
+ */
+RevObject* Integer::convertTo( const TypeSpec& type ) const
+{
 
-    if ( type == RlBoolean::getClassTypeSpec() ) 
+    if ( type == RlBoolean::getClassTypeSpec() )
+    {
         return new RlBoolean( dagNode->getValue() == 0 );
-
+    }
+    
     if ( type == Real::getClassTypeSpec() )
+    {
         return new Real( dagNode->getValue() );
-
+    }
+    
     if ( type == RlString::getClassTypeSpec() ) 
     {
         std::ostringstream o;
-        printValue( o );
+        printValue( o, true );
         return new RlString( o.str() );
     }
 
     if ( type == RealPos::getClassTypeSpec() && dagNode->getValue() > 0 )
+    {
         return new RealPos( dagNode->getValue() );
-
+    }
+    
     if ( type == Natural::getClassTypeSpec() && dagNode->getValue() >= 0)
+    {
         return new Natural( dagNode->getValue() );
-
+    }
+    
+    if ( type == Probability::getClassTypeSpec() )
+    {
+        return new Probability( dagNode->getValue() );
+    }
+    
     return RevObject::convertTo( type );
 }
 
@@ -198,29 +218,38 @@ Real* Integer::divide(const Integer &rhs) const
 }
 
 
-/** Get Rev type of object */
-const std::string& Integer::getClassType(void) { 
+/** 
+ * Get Rev type of object 
+ */
+const std::string& Integer::getClassType(void)
+{
     
     static std::string revType = "Integer";
     
 	return revType; 
 }
 
-/** Get class type spec describing type of object */
-const TypeSpec& Integer::getClassTypeSpec(void) { 
+/** 
+ * Get class type spec describing type of object 
+ */
+const TypeSpec& Integer::getClassTypeSpec(void)
+{
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( RevObject::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( RevObject::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 
-/** Get type spec */
-const TypeSpec& Integer::getTypeSpec( void ) const {
+/** 
+ * Get type spec 
+ */
+const TypeSpec& Integer::getTypeSpec( void ) const
+{
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }
 
 
@@ -236,34 +265,39 @@ void Integer::increment( void )
 
 
 
-/** Is convertible to language object of type? */
-bool Integer::isConvertibleTo( const TypeSpec& type, bool once ) const
+/** 
+ * Is convertible to language object of type? 
+ */
+double Integer::isConvertibleTo( const TypeSpec& type, bool once ) const
 {
 
-    if ( type == RlBoolean::getClassTypeSpec())
+    if ( type == RlBoolean::getClassTypeSpec() )
     {
-        return true;
+        return 0.6;
     }
     
     if ( type == Real::getClassTypeSpec() )
     {
-        return true;
+        return 0.4;
     }
     
     if ( type == RlString::getClassTypeSpec() )
     {
-        return true;
+        return 0.5;
     }
     
-    if ( once && type == RealPos::getClassTypeSpec() && dagNode->getValue() > 0 )
+    if ( once && type == RealPos::getClassTypeSpec() && dagNode->getValue() >= 0 )
     {
-        return true;
+        return 0.3;
     }
     
     if ( once && type == Natural::getClassTypeSpec() && dagNode->getValue() >= 0 )
     {
-        return true;
+        return 0.1;
     }
+    
+    if ( once == true && type == Probability::getClassTypeSpec() && dagNode->getValue() <= 1 && dagNode->getValue() >= 0)
+        return 0.2;
     
     return RevObject::isConvertibleTo( type, once );
 }

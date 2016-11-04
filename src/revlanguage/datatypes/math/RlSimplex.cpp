@@ -13,9 +13,9 @@ using namespace RevLanguage;
  * Construct an empty simplex.
  * We simply rely on the base class.
  */
-Simplex::Simplex( void ) :
-    ModelVector<RealPos>()
+Simplex::Simplex( void ) : ModelVector<RealPos>()
 {
+    
 }
 
 
@@ -24,8 +24,7 @@ Simplex::Simplex( void ) :
  * rescale the values here and make sure they are all positive.
  * Just in case.
  */
-Simplex::Simplex( const RevBayesCore::RbVector<double>& v ) :
-    ModelVector<RealPos>()
+Simplex::Simplex( const RevBayesCore::RbVector<double>& v ) : ModelVector<RealPos>()
 {
     RevBayesCore::RbVector<double>* newVal = makeNormalizedValue( v );
     
@@ -43,9 +42,9 @@ Simplex::Simplex( const RevBayesCore::RbVector<double>& v ) :
  *       NA value)
  */
 Simplex::Simplex( RevBayesCore::TypedDagNode<RevBayesCore::RbVector<double> >* n ) :
-    ModelVector<RealPos>()
+    ModelVector<RealPos>( n )
 {
-        this->setDagNode( n );
+
 }
 
 
@@ -78,9 +77,9 @@ const std::string& Simplex::getClassType(void) {
 /** Get class type spec describing type of object */
 const TypeSpec& Simplex::getClassTypeSpec(void) { 
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), &ModelVector<RealPos>::getClassTypeSpec() );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), &ModelVector<RealPos>::getClassTypeSpec() );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 

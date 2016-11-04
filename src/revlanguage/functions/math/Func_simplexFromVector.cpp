@@ -13,12 +13,17 @@ using namespace RevLanguage;
 
 /** Default constructor */
 Func_simplexFromVector::Func_simplexFromVector( void ) :
-    Function()
+    TypedFunction<Simplex>()
 {
 }
 
 
-/** Clone object */
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'b'.
+ *
+ * \return A new copy of the process.
+ */
 Func_simplexFromVector* Func_simplexFromVector::clone( void ) const
 {
     return new Func_simplexFromVector( *this );
@@ -26,7 +31,7 @@ Func_simplexFromVector* Func_simplexFromVector::clone( void ) const
 
 
 /** Execute function: Compute simplex from vector of RealPos values */
-RevPtr<Variable> Func_simplexFromVector::execute( void )
+RevBayesCore::TypedFunction< RevBayesCore::RbVector<double> >* Func_simplexFromVector::createFunction( void ) const
 {
     
     const RevBayesCore::TypedDagNode< RevBayesCore::RbVector<double> >* vec;
@@ -34,11 +39,7 @@ RevPtr<Variable> Func_simplexFromVector::execute( void )
     
     RevBayesCore::SimplexFromVectorFunction*    func    = new RevBayesCore::SimplexFromVectorFunction( vec );
     
-    DeterministicNode< RevBayesCore::RbVector<double> >*   detNode = new DeterministicNode< RevBayesCore::RbVector<double> >( "", func, this->clone() );
-    
-    Simplex *theSimplex = new Simplex( detNode );
-    
-    return new Variable( theSimplex );
+    return func;
 }
 
 
@@ -46,12 +47,12 @@ RevPtr<Variable> Func_simplexFromVector::execute( void )
 const ArgumentRules& Func_simplexFromVector::getArgumentRules( void ) const
 {
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet )
+    if ( !rules_set )
     {
-        argumentRules.push_back( new ArgumentRule( "x", ModelVector<RealPos>::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        rulesSet = true;
+        argumentRules.push_back( new ArgumentRule( "x", ModelVector<RealPos>::getClassTypeSpec(), "A vector of numbers.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        rules_set = true;
     }
     
     return argumentRules;
@@ -70,9 +71,21 @@ const std::string& Func_simplexFromVector::getClassType( void )
 /** Get Rev type spec of object (static version) */
 const TypeSpec& Func_simplexFromVector::getClassTypeSpec( void )
 {
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), &Function::getClassTypeSpec() );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), &Function::getClassTypeSpec() );
     
-	return revTypeSpec;
+	return rev_type_spec;
+}
+
+
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func_simplexFromVector::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "simplex";
+    
+    return f_name;
 }
 
 
@@ -80,12 +93,5 @@ const TypeSpec& Func_simplexFromVector::getClassTypeSpec( void )
 const TypeSpec& Func_simplexFromVector::getTypeSpec( void ) const
 {
     return getClassTypeSpec();
-}
-
-
-/** Get return type of the function */
-const TypeSpec& Func_simplexFromVector::getReturnType( void ) const
-{
-    return Simplex::getClassTypeSpec();
 }
 

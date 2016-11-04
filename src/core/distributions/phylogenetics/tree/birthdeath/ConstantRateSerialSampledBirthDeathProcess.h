@@ -12,9 +12,15 @@ namespace RevBayesCore {
      * @brief Constant-rate birth-death process with serially sampled tips.
      *
      *
-     * The diversity-dependent pure-birth process is a species tree distribution without extinction events.
-     * The speciation rate depends on the current diversity by the function:
-     * lambda = (1.0 - n/K) * lambda_0
+     * The constant rate birth-death process with serially sampled tips is an extension
+     * of the ordinary constant rate birth-death process. The process has four parameters:
+     * lambda := speciation rate
+     * mu     := extinction rate
+     * psi    := sampling rate
+     * rho    := sampling probability at present
+     * Note that at a sampling event the lineage also goes extinct afterwards.
+     * That means, there cannot be any ancestral samples. This may be realistic for virus evolution
+     * when a sampled strain will be contained.
      *
      *
      * @copyright Copyright 2009-
@@ -25,23 +31,24 @@ namespace RevBayesCore {
     class ConstantRateSerialSampledBirthDeathProcess : public AbstractBirthDeathProcess {
         
     public:
-        ConstantRateSerialSampledBirthDeathProcess(const TypedDagNode<double> *o, const TypedDagNode<double> *ra, const TypedDagNode<double> *s, const TypedDagNode<double> *e, const TypedDagNode<double> *p, const TypedDagNode<double> *r,
-                                           double tLastSample, const std::string &cdt, const std::vector<Taxon> &tn, const std::vector<Clade> &c);        //!< Constructor
+        ConstantRateSerialSampledBirthDeathProcess(const TypedDagNode<double> *ra, const TypedDagNode<double> *s, const TypedDagNode<double> *e, const TypedDagNode<double> *p, const TypedDagNode<double> *r,
+                                           double tLastSample, const std::string &cdt, const std::vector<Taxon> &tn);        //!< Constructor
         
         // public member functions
         ConstantRateSerialSampledBirthDeathProcess*         clone(void) const;                                                                                  //!< Create an independent clone
         
+    protected:
         // Parameter management functions
-        std::set<const DagNode*>                            getParameters(void) const;                                          //!< Return parameters
-        void                                                swapParameter(const DagNode *oldP, const DagNode *newP);            //!< Swap a parameter
+        void                                                swapParameterInternal(const DagNode *oldP, const DagNode *newP);            //!< Swap a parameter
         
     private:
         
         // helper functions
         double                                              computeLnProbabilityTimes(void) const;                                                              //!< Compute the log-transformed probability of the current value.
-        std::vector<double>*                                simSpeciations(size_t n, double origin) const;                                                      //!< Simulate n speciation events.
+        double                                              lnProbNumTaxa(size_t n, double start, double end, bool MRCA) const { throw RbException("Cannot compute P(nTaxa)."); }
+        double                                              simulateDivergenceTime(double origin, double present) const;                                                  //!< Simulate n speciation events.
         double                                              pSurvival(double start, double end) const;                                                          //!< Compute the probability of survival of the process (without incomplete taxon sampling).
-        double                                              q(double t) const;
+        double                                              logQ(double t) const;
         
         // members
         const TypedDagNode<double>*                         lambda;                                                                                             //!< The speciation rate.

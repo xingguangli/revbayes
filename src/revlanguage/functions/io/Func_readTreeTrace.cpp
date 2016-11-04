@@ -1,5 +1,4 @@
 #include "ArgumentRule.h"
-#include "BranchLengthTree.h"
 #include "ConstantNode.h"
 #include "Ellipsis.h"
 #include "Func_readTreeTrace.h"
@@ -12,12 +11,12 @@
 #include "RlBranchLengthTree.h"
 #include "RlString.h"
 #include "RlTimeTree.h"
-#include "RlTreeTrace.h"
+#include "RlTraceTree.h"
+#include "RlUserInterface.h"
 #include "RlUtils.h"
 #include "StringUtilities.h"
-#include "TreeTrace.h"
+#include "TraceTree.h"
 #include "TreeUtilities.h"
-#include "UserInterface.h"
 
 #include <map>
 #include <set>
@@ -26,7 +25,12 @@
 
 using namespace RevLanguage;
 
-/** Clone object */
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'b'.
+ *
+ * \return A new copy of the process.
+ */
 Func_readTreeTrace* Func_readTreeTrace::clone( void ) const
 {
     
@@ -35,32 +39,68 @@ Func_readTreeTrace* Func_readTreeTrace::clone( void ) const
 
 
 /** Execute function */
-RevPtr<Variable> Func_readTreeTrace::execute( void ) {
+RevPtr<RevVariable> Func_readTreeTrace::execute( void ) {
     
     // get the information from the arguments for reading the file
-    const std::string&  fn       = static_cast<const RlString&>( args[0].getVariable()->getRevObject() ).getValue();
+    
     const std::string&  treetype = static_cast<const RlString&>( args[1].getVariable()->getRevObject() ).getValue();
     const std::string&  sep      = static_cast<const RlString&>( args[2].getVariable()->getRevObject() ).getValue();
     
-    // check that the file/path name has been correctly specified
-    RevBayesCore::RbFileManager myFileManager( fn );
-    
-    if ( !myFileManager.testFile() || !myFileManager.testDirectory() )
-    {
-        std::string errorStr = "";
-        myFileManager.formatError(errorStr);
-        throw RbException(errorStr);
-    }
-    
-    // set up a vector of strings containing the name or names of the files to be read
     std::vector<std::string> vectorOfFileNames;
-    if ( myFileManager.isFile() )
+    
+    if ( args[0].getVariable()->getRevObject().isType( ModelVector<RlString>::getClassTypeSpec() ) )
     {
-        vectorOfFileNames.push_back( myFileManager.getFullFileName() );
+        const ModelVector<RlString>& fn = static_cast<const ModelVector<RlString> &>( args[0].getVariable()->getRevObject() ).getValue();
+        std::vector<std::string> tmp;
+        for (size_t i = 0; i < fn.size(); i++)
+        {
+            RevBayesCore::RbFileManager myFileManager( fn[i] );
+            
+            if ( !myFileManager.testFile() && !(myFileManager.testDirectory() && myFileManager.getFileName() == "" ) )
+            {
+                std::string errorStr = "Could not find filename: " + myFileManager.getFileName() + "\n";
+                myFileManager.formatError(errorStr);
+                throw RbException(errorStr);
+            }
+            
+            if ( myFileManager.isFile() )
+            {
+                tmp.push_back( myFileManager.getFullFileName() );
+            }
+            else
+            {
+                myFileManager.setStringWithNamesOfFilesInDirectory( tmp );
+            }
+        }
+        for (size_t i = 0; i < tmp.size(); i++)
+        {
+            vectorOfFileNames.push_back(tmp[i]);
+        }
+        std::set<std::string> s( vectorOfFileNames.begin(), vectorOfFileNames.end() );
+        vectorOfFileNames.assign( s.begin(), s.end() );
     }
     else
     {
-        myFileManager.setStringWithNamesOfFilesInDirectory( vectorOfFileNames );
+        // check that the file/path name has been correctly specified
+        const std::string&  fn       = static_cast<const RlString&>( args[0].getVariable()->getRevObject() ).getValue();
+        RevBayesCore::RbFileManager myFileManager( fn );
+        
+        if ( !myFileManager.testFile() && !(myFileManager.testDirectory() && myFileManager.getFileName() == "" ) )
+        {
+            std::string errorStr = "Could not find filename: " + myFileManager.getFileName() + "\n";
+            myFileManager.formatError(errorStr);
+            throw RbException(errorStr);
+        }
+        
+        // set up a vector of strings containing the name or names of the files to be read
+        if ( myFileManager.isFile() )
+        {
+            vectorOfFileNames.push_back( myFileManager.getFullFileName() );
+        }
+        else
+        {
+            myFileManager.setStringWithNamesOfFilesInDirectory( vectorOfFileNames );
+        }
     }
     
     RevObject *rv;
@@ -77,31 +117,7 @@ RevPtr<Variable> Func_readTreeTrace::execute( void ) {
         throw RbException("Unknown tree type to read.");
     }
     
-    return new Variable( rv );
-}
-
-
-/** Format the error exception string for problems specifying the file/path name */
-void Func_readTreeTrace::formatError(RevBayesCore::RbFileManager& fm, std::string& errorStr)
-{
-    
-    bool fileNameProvided    = fm.isFileNamePresent();
-    bool isFileNameGood      = fm.testFile();
-    bool isDirectoryNameGood = fm.testDirectory();
-    
-    if ( fileNameProvided == false && isDirectoryNameGood == false )
-    {
-        errorStr += "Could not read contents of directory \"" + fm.getFilePath() + "\" because the directory does not exist";
-    }
-    else if (fileNameProvided == true && (isFileNameGood == false || isDirectoryNameGood == false)) {
-        errorStr += "Could not read file named \"" + fm.getFileName() + "\" in directory named \"" + fm.getFilePath() + "\" ";
-        if (isFileNameGood == false && isDirectoryNameGood == true)
-            errorStr += "because the file does not exist";
-        else if (isFileNameGood == true && isDirectoryNameGood == false)
-            errorStr += "because the directory does not exist";
-        else
-            errorStr += "because neither the directory nor the file exist";
-    }
+    return new RevVariable( rv );
 }
 
 
@@ -110,18 +126,23 @@ const ArgumentRules& Func_readTreeTrace::getArgumentRules( void ) const
 {
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool rulesSet = false;
+    static bool rules_set = false;
     
-    if (!rulesSet)
+    if (!rules_set)
     {
-    
-        argumentRules.push_back( new ArgumentRule( "file"     , RlString::getClassTypeSpec(), ArgumentRule::BY_VALUE ) );
-        std::vector<std::string> options;
-        options.push_back( "clock" );
-        options.push_back( "non-clock" );
-        argumentRules.push_back( new OptionRule( "treetype", new RlString("clock"), options ) );
-        argumentRules.push_back( new ArgumentRule( "separator", RlString::getClassTypeSpec(), ArgumentRule::BY_VALUE, ArgumentRule::ANY, new RlString("\t") ) );
-        rulesSet = true;
+        //        std::vector<TypeSpec> branchRateTypeentRule( "branchRates", branchRateTypes, "The global or branch-specific rate multipliers.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY, new RealPos(1.0) ) );
+        
+        std::vector<TypeSpec> fileTypes;
+        fileTypes.push_back( RlString::getClassTypeSpec() );
+        fileTypes.push_back( ModelVector<RlString>::getClassTypeSpec() );
+        argumentRules.push_back( new ArgumentRule( "file"     , fileTypes, "The name of the tree trace file(s).", ArgumentRule::BY_VALUE, ArgumentRule::ANY ) );
+        
+        std::vector<std::string> treeOptions;
+        treeOptions.push_back( "clock" );
+        treeOptions.push_back( "non-clock" );
+        argumentRules.push_back( new OptionRule( "treetype", new RlString("clock"), treeOptions, "The type of trees." ) );
+        argumentRules.push_back( new ArgumentRule( "separator", RlString::getClassTypeSpec(), "The separator/delimiter between values in the file.", ArgumentRule::BY_VALUE, ArgumentRule::ANY, new RlString("\t") ) );
+        rules_set = true;
     }
     
     return argumentRules;
@@ -129,43 +150,61 @@ const ArgumentRules& Func_readTreeTrace::getArgumentRules( void ) const
 
 
 /** Get Rev type of object */
-const std::string& Func_readTreeTrace::getClassType(void) {
+const std::string& Func_readTreeTrace::getClassType(void)
+{
     
     static std::string revType = "Func_readTreeTrace";
     
-	return revType;
+    return revType;
 }
+
 
 /** Get class type spec describing type of object */
-const TypeSpec& Func_readTreeTrace::getClassTypeSpec(void) {
+const TypeSpec& Func_readTreeTrace::getClassTypeSpec(void)
+{
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec;
+    return rev_type_spec;
 }
 
+
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func_readTreeTrace::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "readTreeTrace";
+    
+    return f_name;
+}
+
+
 /** Get type spec */
-const TypeSpec& Func_readTreeTrace::getTypeSpec( void ) const {
+const TypeSpec& Func_readTreeTrace::getTypeSpec( void ) const
+{
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }
 
 
 /** Get return type */
-const TypeSpec& Func_readTreeTrace::getReturnType( void ) const {
+const TypeSpec& Func_readTreeTrace::getReturnType( void ) const
+{
     
-    static TypeSpec returnTypeSpec = TreeTrace<BranchLengthTree>::getClassTypeSpec();
+    static TypeSpec returnTypeSpec = TraceTree::getClassTypeSpec();
     return returnTypeSpec;
 }
 
 
-TreeTrace<BranchLengthTree>* Func_readTreeTrace::readBranchLengthTrees(const std::vector<std::string> &vectorOfFileNames, const std::string &delimitter)
+TraceTree* Func_readTreeTrace::readBranchLengthTrees(const std::vector<std::string> &vectorOfFileNames, const std::string &delimitter)
 {
     
     
-    std::vector<RevBayesCore::TreeTrace<RevBayesCore::BranchLengthTree> > data;
+    std::vector<RevBayesCore::TraceTree > data;
     
     
     // Set up a map with the file name to be read as the key and the file type as the value. Note that we may not
@@ -185,7 +224,7 @@ TreeTrace<BranchLengthTree>* Func_readTreeTrace::readBranchLengthTrees(const std
         
         /* Initialize */
         std::string commandLine;
-        std::cerr << "Processing file \"" << fn << "\"" << std::endl;
+        RBOUT( "Processing file \"" + fn + "\"");
         
         size_t index = 0;
         
@@ -221,15 +260,17 @@ TreeTrace<BranchLengthTree>* Func_readTreeTrace::readBranchLengthTrees(const std
             // we assume a header at the first line of the file
             if (!hasHeaderBeenRead) {
                 
-                for (size_t j=1; j<columns.size(); j++) {
+                for (size_t j=1; j<columns.size(); j++)
+                {
                     
                     std::string parmName = columns[j];
-                    if ( parmName == "Posterior" || parmName == "Likelihood" || parmName == "Prior") {
+                    if ( parmName == "Posterior" || parmName == "Likelihood" || parmName == "Prior")
+                    {
                         continue;
                     }
                     index = j;
                     
-                    RevBayesCore::TreeTrace<RevBayesCore::BranchLengthTree> t = RevBayesCore::TreeTrace<RevBayesCore::BranchLengthTree>();
+                    RevBayesCore::TraceTree t = RevBayesCore::TraceTree( false );
                     
                     t.setParameterName(parmName);
                     t.setFileName(fn);
@@ -243,34 +284,36 @@ TreeTrace<BranchLengthTree>* Func_readTreeTrace::readBranchLengthTrees(const std
             }
             
             // adding values to the Traces
-            RevBayesCore::TreeTrace<RevBayesCore::BranchLengthTree>& t = data[0];
+            RevBayesCore::TraceTree& t = data[0];
             
             RevBayesCore::NewickConverter c;
-            RevBayesCore::BranchLengthTree *tau = c.convertFromNewick( columns[index] );
+            RevBayesCore::Tree *tau = c.convertFromNewick( columns[index] );
             
-            if ( outgroup == "" )
-            {
-                RevBayesCore::BranchLengthTree& referenceTree = *tau;
-                outgroup = referenceTree.getTipNode(0).getName();
-            }
+            // moved the reroot functionality below into
+            // RevBayesCore::TreeSummary<BranchLengthTree>::summarizeTrees()
+            // so that tree traces retain their original topology
+            // will freyman 12/12/14
             
-            // re-root the tree so that we can compare the the trees
-            tau->reroot( outgroup );
+            //            if ( outgroup == "" )
+            //            {
+            //                RevBayesCore::BranchLengthTree& referenceTree = *tau;
+            //                outgroup = referenceTree.getTipNode(0).getName();
+            //            }
+            //            // re-root the tree so that we can compare the the trees
+            //            tau->reroot( outgroup );
             
-            t.addObject( *tau );
-            
-            delete tau;
+            t.addObject( tau );
         }
     }
     
-    return new TreeTrace<BranchLengthTree>( data[0] );
+    return new TraceTree( data[0] );
 }
 
 
-TreeTrace<TimeTree>* Func_readTreeTrace::readTimeTrees(const std::vector<std::string> &vectorOfFileNames, const std::string &delimitter) {
+TraceTree* Func_readTreeTrace::readTimeTrees(const std::vector<std::string> &vectorOfFileNames, const std::string &delimitter) {
     
     
-    std::vector<RevBayesCore::TreeTrace<RevBayesCore::TimeTree> > data;
+    std::vector<RevBayesCore::TraceTree> data;
     
     
     // Set up a map with the file name to be read as the key and the file type as the value. Note that we may not
@@ -290,7 +333,7 @@ TreeTrace<TimeTree>* Func_readTreeTrace::readTimeTrees(const std::vector<std::st
         
         /* Initialize */
         std::string commandLine;
-        std::cerr << "Processing file \"" << fn << "\"" << std::endl;
+        RBOUT( "Processing file \"" + fn + "\"");
         
         size_t index = 0;
         
@@ -311,7 +354,8 @@ TreeTrace<TimeTree>* Func_readTreeTrace::readTimeTrees(const std::vector<std::st
             
             
             // removing comments
-            if (line[0] == '#') {
+            if (line[0] == '#')
+            {
                 continue;
             }
             
@@ -329,12 +373,13 @@ TreeTrace<TimeTree>* Func_readTreeTrace::readTimeTrees(const std::vector<std::st
                 {
                     
                     std::string parmName = columns[j];
-                    if ( parmName == "Posterior" || parmName == "Likelihood" || parmName == "Prior") {
+                    if ( parmName == "Posterior" || parmName == "Likelihood" || parmName == "Prior")
+                    {
                         continue;
                     }
                     index = j;
                     
-                    RevBayesCore::TreeTrace<RevBayesCore::TimeTree> t = RevBayesCore::TreeTrace<RevBayesCore::TimeTree>();
+                    RevBayesCore::TraceTree t = RevBayesCore::TraceTree( true );
                     
                     t.setParameterName(parmName);
                     t.setFileName(fn);
@@ -349,20 +394,17 @@ TreeTrace<TimeTree>* Func_readTreeTrace::readTimeTrees(const std::vector<std::st
             
             // adding values to the Traces
             //            for (size_t j=1; j<columns.size(); j++) {
-            RevBayesCore::TreeTrace<RevBayesCore::TimeTree>& t = data[0];
+            RevBayesCore::TraceTree& t = data[0];
             
             RevBayesCore::NewickConverter c;
-            RevBayesCore::BranchLengthTree *blTree = c.convertFromNewick( columns[index] );
-            RevBayesCore::TimeTree *tau = RevBayesCore::TreeUtilities::convertTree( *blTree );
+            RevBayesCore::Tree *blTree = c.convertFromNewick( columns[index] );
+            RevBayesCore::Tree *tau = RevBayesCore::TreeUtilities::convertTree( *blTree );
             
-            t.addObject( *tau );
-            
-            delete tau;
-
+            t.addObject( tau );
         }
     }
     
-    return new TreeTrace<TimeTree>( data[0] );
+    return new TraceTree( data[0] );
 }
 
 

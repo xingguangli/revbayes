@@ -1,24 +1,10 @@
-/*!
- * @file
- * This file contains global constants used in the program.
- *
- * @brief Names of variable types
- *
- * (c) Copyright 2009- under GPL version 3
- * @date Last modified: $Date$
- * @author The RevBayes Development Core Team
- * @license GPL version 3
- * @version 1.0
- * @since 2010-09-09, version 1.0
- *
- * $Id$
- */
-
 #ifndef RbUtil_H
 #define RbUtil_H
 
+
 #include "RbContainer.h"
 #include "RbVector.h"
+
 
 #include <iostream>
 #include <string>
@@ -26,14 +12,6 @@
 
 
 namespace RevBayesCore {
-    
-    // Global functions using the class
-//    std::ostream&                       operator<<(std::ostream& o, const std::vector<bool>& x);                            //!< Overloaded output operator
-//    std::ostream&                       operator<<(std::ostream& o, const std::vector<double>& x);                          //!< Overloaded output operator
-//    std::ostream&                       operator<<(std::ostream& o, const std::vector<int>& x);                             //!< Overloaded output operator
-//    std::ostream&                       operator<<(std::ostream& o, const std::vector<unsigned int>& x);                    //!< Overloaded output operator
-//    std::ostream&                       operator<<(std::ostream& o, const std::vector<std::string>& x);                     //!< Overloaded output operator
-
     
     namespace RbUtils {
         
@@ -150,9 +128,6 @@ namespace RevBayesCore {
     std::vector<double>                 operator/(const std::vector<double>& x, const std::vector<int>&    y);              //!< Overloaded division operator
     std::vector<double>                 operator/(const std::vector<int>&    x, const std::vector<double>& y);              //!< Overloaded division operator
     std::vector<double>                 operator/(const std::vector<double>& x, const std::vector<double>& y);              //!< Overloaded division operator
-
-//    std::ostream&                       operator<<(std::ostream& o, const bool& x);                                         //!< Overloaded output operator
-//    std::ostream&                       operator<<(std::ostream& o, const char& x);                                         //!< Overloaded output operator
 
 }
 

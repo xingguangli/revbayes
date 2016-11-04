@@ -30,7 +30,7 @@ UserFunction* UserFunction::clone(void) const
 
 
 /** Execute function. Here we create a deterministic node if applicable, otherwise we just execute the code */
-RevPtr<Variable> UserFunction::execute( void )
+RevPtr<RevVariable> UserFunction::execute( void )
 {
     
     // If the return type object has a DAG node inside it, we return an appropriate model/container/factor object
@@ -42,7 +42,7 @@ RevPtr<Variable> UserFunction::execute( void )
     {
         retVal->makeUserFunctionValue( this->clone() );
 
-        return new Variable( retVal );
+        return new RevVariable( retVal );
     }
     else
     {
@@ -55,10 +55,10 @@ RevPtr<Variable> UserFunction::execute( void )
 
 
 /** In this function we execute the Rev code for the function (compiled syntax tree) */
-RevPtr<Variable> UserFunction::executeCode( void )
+RevPtr<RevVariable> UserFunction::executeCode( void )
 {
     // Create new evaluation frame with function base class execution environment as parent
-    Environment* functionFrame = new Environment( getEnvironment() );
+    Environment* functionFrame = new Environment( getEnvironment(), "UserFunctionEnvironment" );
     
     // Add the arguments to our environment
     for ( std::vector<Argument>::iterator it = args.begin(); it != args.end(); ++it )
@@ -73,7 +73,7 @@ RevPtr<Variable> UserFunction::executeCode( void )
     Signals::getSignals().clearFlags();
     
     // Set initial return value
-    RevPtr<Variable> retVar = NULL;
+    RevPtr<RevVariable> retVar = NULL;
     
     // Execute code
     const std::list<SyntaxElement*>& code = functionDef->getCode();
@@ -106,24 +106,36 @@ const std::string& UserFunction::getClassType(void)
 /** Get Rev type spec (static) */
 const TypeSpec& UserFunction::getClassTypeSpec(void)
 {
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), &Function::getClassTypeSpec() );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), &Function::getClassTypeSpec() );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 
 /** Get the parameters from the argument vector */
-std::set<const RevBayesCore::DagNode*> UserFunction::getParameters(void) const
+std::vector<const RevBayesCore::DagNode*> UserFunction::getParameters(void) const
 {
-    std::set<const RevBayesCore::DagNode*> params;
+    std::vector<const RevBayesCore::DagNode*> params;
 
     for (std::vector<Argument>::const_iterator it = args.begin(); it != args.end(); ++it )
     {
         if ( (*it).getVariable()->getRevObject().isModelObject() )
-            params.insert( (*it).getVariable()->getRevObject().getDagNode() );
+            params.push_back( (*it).getVariable()->getRevObject().getDagNode() );
     }
 
     return params;
+}
+
+
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string UserFunction::getFunctionName( void ) const
+{
+    // create a name variable that is NOT the same for all instance of this class
+    std::string f_name = functionDef->getName();
+    
+    return f_name;
 }
 
 

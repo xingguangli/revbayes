@@ -1,20 +1,3 @@
-/**
- * @file
- * This file contains the declaration of the monitor base class, used to hold information
- * about the monitoring of a variable DAG node.
- *
- * @brief Declaration of the monitor base class
- *
- * (c) Copyright 2009- under GPL version 3
- * @date Last modified: $Date$
- * @author The RevBayes Development Core Team
- * @license GPL version 3
- * @version 1.0
- * @since 2012-06-19, version 1.0
- *
- * $Id$
- */
-
 #ifndef Monitor_H
 #define Monitor_H
 
@@ -36,7 +19,6 @@ namespace RevBayesCore {
         // Constructors and Destructors
         Monitor(unsigned long printgen);                                                                                          //!< Default Constructor
         Monitor(unsigned long printgen, DagNode *n);                                                                              //!< Default Constructor
-        Monitor(unsigned long printgen, const std::set<DagNode *> &n);                                                            //!< Default Constructor
         Monitor(unsigned long printgen, const std::vector<DagNode *> &n);                                                         //!< Default Constructor
         Monitor(const Monitor &x);                                                                                      //!< Copy Constructor
         virtual ~Monitor(void);                                                                                         //!< Destructor
@@ -49,28 +31,38 @@ namespace RevBayesCore {
         virtual void                                monitor(unsigned long gen) = 0;                                     //!< InferenceMonitor at generation gen
 
         // methods you may want to overwrite
-        virtual void                                swapNode(DagNode *oldN, DagNode *newN);
+        virtual void                                addFileExtension(const std::string &s, bool dir);
+        virtual void                                addVariable(DagNode *n);
         virtual void                                closeStream(void);                                                  //!< Close stream after finish writing
-        virtual void                                openStream(void);                                                   //!< Open the stream for writing
+        virtual void                                combineReplicates(size_t n);                                        //!< Combine results from several replicate analyses
+        virtual void                                disable(void);                                                      //!< Disable this monitor (momentarily)
+        virtual void                                enable(void);                                                       //!< Enable this monitor
+        virtual bool                                isEnabled(void) const;                                              //!< Is the monitor currently enabled?
+        virtual bool                                isScreenMonitor(void) const;                                        //!< Is this a screen monitor?
+        virtual bool                                isFileMonitor(void) const;
+        virtual void                                openStream(bool reopen);                                            //!< Open the stream for writing
         virtual void                                printHeader(void);                                                  //!< Print header
         virtual void                                setModel(Model* m);
-
+        virtual void                                swapNode(DagNode *oldN, DagNode *newN);
+        virtual void                                removeVariable(DagNode *n);
+        virtual void                                reset(size_t numCycles);                                            //!< Reset the monitor for a new start.
 
         // getters and setters
         const std::vector<DagNode *>&               getDagNodes(void) const;                                            //!< Get the nodes vector
-        void                                        setDagNodes(const std::set<DagNode *>& args);
+//        void                                        setDagNodes(const std::set<DagNode *>& args);
         void                                        setDagNodes(const std::vector<DagNode *>& args);
         void                                        setMcmc(Mcmc* m);
-        void                                        setNumCycles(size_t n) { numCycles = n; }                           //!< Set num cycles to monitor
 
     protected:
     
+        void                                        sortNodesByName(void);                                              //!< Sort the nodes by name
+        
         // parameters
+        bool                                        enabled;
         unsigned long                               printgen;
         Mcmc*                                       mcmc;
         std::vector<DagNode *>                      nodes;
         const Model*                                model;
-        size_t                                      numCycles;                                                          //!< Total number of cycles to monitor
     };
     
     // Global functions using the class

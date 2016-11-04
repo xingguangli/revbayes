@@ -34,6 +34,7 @@ namespace RevBayesCore {
         TransitionProbabilityMatrix&        operator=(const TransitionProbabilityMatrix& tpm);
         double*                             operator[](size_t i);                                               //!< Subscript operator
         const double*                       operator[](size_t i) const;                                         //!< Subscript operator (const)
+        TransitionProbabilityMatrix&        operator*=(const TransitionProbabilityMatrix& B);                   //!< Matrix-matrix multiply
         
 //        std::vector<std::vector<double> >::const_iterator       begin(void) const;
 //        std::vector<std::vector<double> >::iterator             begin(void);
@@ -49,7 +50,7 @@ namespace RevBayesCore {
  
 //    private:
         
-        size_t                              numStates;                                                          //!< The number of character states
+        size_t                              num_states;                                                          //!< The number of character states
         size_t                              nElements;
         double*                             theMatrix;                                                          //!< Holds the transition probability matrix
     

@@ -36,12 +36,12 @@ using namespace RevBayesCore;
 
 /** Constructor from real matrix */
 EigenSystem::EigenSystem(const MatrixReal* m) : 
-eigenvectors( m->getNumberOfRows(), m->getNumberOfRows() ), 
-inverseEigenvectors( m->getNumberOfRows(), m->getNumberOfRows() ),
-complexEigenvectors( m->getNumberOfRows(), m->getNumberOfRows() ),
-complexInverseEigenvectors( m->getNumberOfRows(), m->getNumberOfRows() ),
-realEigenvalues( m->getNumberOfRows() ),
-imaginaryEigenvalues( m->getNumberOfRows() )
+    eigenvectors( m->getNumberOfRows(), m->getNumberOfRows() ),
+    inverseEigenvectors( m->getNumberOfRows(), m->getNumberOfRows() ),
+    complexEigenvectors( m->getNumberOfRows(), m->getNumberOfRows() ),
+    complexInverseEigenvectors( m->getNumberOfRows(), m->getNumberOfRows() ),
+    realEigenvalues( m->getNumberOfRows() ),
+    imaginaryEigenvalues( m->getNumberOfRows() )
 {
     
     // set the pointer to the rate matrix for this system of eigen values and vectors
@@ -493,7 +493,8 @@ void EigenSystem::elmtrans(int low, int high, MatrixReal& a, std::vector<int>& p
  *\brief Return determinant
  *\param V_ Matrix for eigenvectors
  */
-double EigenSystem::getDeterminant(void) {
+double EigenSystem::getDeterminant(void)
+{
     
 	double det = 1.0;
 	for (int i=0; i<n; i++) 
@@ -1275,6 +1276,12 @@ void EigenSystem::update(void) {
 	
 	// compute eigenvalues and eigenvectors
 	hqr2(low, high, A, realEigenvalues, imaginaryEigenvalues, eigenvectors);
+    
+    for (std::vector<double>::iterator it = realEigenvalues.begin(); it != realEigenvalues.end(); ++it)
+    {
+        if ( *it > 0.0 )
+            *it = 0.0;
+    }
 	
 	// reverse balancing to obtain eigenvectors
 	balback(low, high, scale, eigenvectors);

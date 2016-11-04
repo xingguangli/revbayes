@@ -28,7 +28,8 @@
 using namespace RevLanguage;
 
 /** Default constructor */
-Probability::Probability( void ) : RealPos( 1.0 ) {
+Probability::Probability( void ) : RealPos( 1.0 )
+{
 
     setGuiVariableName("Probability");
     setGuiLatexSymbol("P");
@@ -36,12 +37,16 @@ Probability::Probability( void ) : RealPos( 1.0 ) {
 
 
 /** Construct from double */
-Probability::Probability( double x ) : RealPos( x ) {
+Probability::Probability( double x ) : RealPos( x )
+{
     
     setGuiVariableName("Probability");
     setGuiLatexSymbol("P");
     if ( x < 0.0 || x > 1.0)
+    {
         throw RbException( "Creation of " + getClassType() + " with value x=" + x + " outside standard probabilities (0,1)");
+    }
+    
 }
 
 
@@ -53,7 +58,12 @@ Probability::Probability( RevBayesCore::TypedDagNode<double> *x ) : RealPos( x )
 }
 
 
-/** Clone object */
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'b'.
+ *
+ * \return A new copy of the process.
+ */
 Probability* Probability::clone( void ) const {
     
 	return new Probability( *this );
@@ -71,17 +81,17 @@ const std::string& Probability::getClassType(void) {
 /** Get class type spec describing type of object */
 const TypeSpec& Probability::getClassTypeSpec(void) { 
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( RealPos::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( RealPos::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 
 /** Get type spec */
 const TypeSpec& Probability::getTypeSpec( void ) const {
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }
 

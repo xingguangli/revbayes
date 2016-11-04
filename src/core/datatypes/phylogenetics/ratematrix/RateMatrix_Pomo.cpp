@@ -16,60 +16,69 @@
 using namespace RevBayesCore;
 
 /** Construct rate matrix with n states */
-RateMatrix_Pomo::RateMatrix_Pomo(size_t n) : AbstractRateMatrix( n ), N( 10 ), matrixSize( n ){
+RateMatrix_Pomo::RateMatrix_Pomo(size_t n) : AbstractRateMatrix( n ), N( 10 ), matrixSize( n )
+{
     std::vector<double> temp (4, 0.0);
     for (size_t i = 0; i<4 ; ++i) {
         mu.push_back(temp);
         s.push_back(1.0);
     }
-    updateMatrix();
+    update();
 }
 
 /** Construct rate matrix with n states, virtual population size, mutation rates, selection coefficients */
-RateMatrix_Pomo::RateMatrix_Pomo(size_t n, const size_t vps, const std::vector<double> &mr, const std::vector<double> &sc) : AbstractRateMatrix( n ), N( vps ), matrixSize( n ){
+RateMatrix_Pomo::RateMatrix_Pomo(size_t n, const size_t vps, const std::vector<double> &mr, const std::vector<double> &sc) : AbstractRateMatrix( n ), N( vps ), matrixSize( n )
+{
     std::vector<double> temp (4, 0.0);
-    for (size_t i = 0; i<4 ; ++i) {
+    for (size_t i = 0; i<4 ; ++i)
+    {
         mu.push_back(temp);
         s.push_back(1.0);
     }
     setMutationRates(mr);
     setSelectionCoefficients(sc);
-    updateMatrix();
+    update();
 }
 
 /** Construct rate matrix with n states, a matrix of mutation rates, and a vector of selection coefficients */
-RateMatrix_Pomo::RateMatrix_Pomo(size_t n,  const size_t vps, const RateMatrix &mm, const std::vector<double> sc)  : AbstractRateMatrix( n ), N( vps ), matrixSize( n ){
+RateMatrix_Pomo::RateMatrix_Pomo(size_t n,  const size_t vps, const RateGenerator &mm, const std::vector<double> sc)  : AbstractRateMatrix( n ), N( vps ), matrixSize( n )
+{
     std::vector<double> temp (4, 0.0);
-    for (size_t i = 0; i<4 ; ++i) {
+    for (size_t i = 0; i<4 ; ++i)
+    {
         mu.push_back(temp);
         s.push_back(1.0);
     }
     setMutationRates(mm);
     setSelectionCoefficients(sc);
-    updateMatrix();
-}
-
-
-/** Copy constructor */
-RateMatrix_Pomo::RateMatrix_Pomo(const RateMatrix_Pomo& m) : AbstractRateMatrix( m ), N(m.N), matrixSize(m.matrixSize), mu(m.mu), s(m.s), precision(m.precision), stationaryFreqs(m.stationaryFreqs) {
-
+    update();
 }
 
 
 /** Destructor */
-RateMatrix_Pomo::~RateMatrix_Pomo(void) {
+RateMatrix_Pomo::~RateMatrix_Pomo(void)
+{
     
 }
 
 
-RateMatrix_Pomo& RateMatrix_Pomo::operator=(const RateMatrix_Pomo &r) {
+/**
+ * Assign the value of m to this instance. This function is our mechanism to call the assignment operator.
+ *
+ *
+ */
+RateMatrix_Pomo& RateMatrix_Pomo::assign(const Assignable &m)
+{
     
-    if (this != &r)
+    const RateMatrix_Pomo *rm = dynamic_cast<const RateMatrix_Pomo*>(&m);
+    if ( rm != NULL )
     {
-        RateMatrix::operator=( r );
+        return operator=(*rm);
     }
-    
-    return *this;
+    else
+    {
+        throw RbException("Could not assign rate matrix.");
+    }
 }
 
 double RateMatrix_Pomo::averageRate(void) const
@@ -92,11 +101,12 @@ void RateMatrix_Pomo::buildRateMatrix(void)
     // calculate the transition probabilities
     for (size_t i=0; i< matrixSize; i++)
     {
-    //The first 4 states are the monomorphic states; we can't directly change from one into another one
+        //The first 4 states are the monomorphic states; we can't directly change from one into another one
         for (size_t j=0; j< matrixSize; j++) 
         {
-        (*theRateMatrix)[i][j] = 0.0;
+            (*the_rate_matrix)[i][j] = 0.0;
         }
+        
     }
     
     //Change from a monomorphic into a polymorphic state
@@ -105,55 +115,55 @@ void RateMatrix_Pomo::buildRateMatrix(void)
     //Only 2 entries can differ from 0, (N-1)A and (N-1)C
     //(N-1)A can only come from monomorphic state A, i.e. i=0
     //(N-1)A is at the end of the submatrix, j=4+N-1
-    (*theRateMatrix)[0][4 + Nminus1 - 1] = N2 * mu[0][1];
+    (*the_rate_matrix)[0][4 + Nminus1 - 1] = N2 * mu[0][1];
     //(N-1)C can only come from monomorphic state C, i.e. i=1
     //(N-1)C is at the begining of the submatrix, j=4+N
-    (*theRateMatrix)[1][4] = N2 * mu[1][0];
+    (*the_rate_matrix)[1][4] = N2 * mu[1][0];
     
     //The 4+Nminus1..4+2Nminus1 states are the AG matrix
     //Only 2 entries can differ from 0, (N-1)A and (N-1)G
     //(N-1)A can only come from monomorphic state A, i.e. i=0
     //(N-1)A is at the end of the submatrix, j=4+2*Nminus1
-    (*theRateMatrix)[0][4 + 2*Nminus1 -1] = N2 * mu[0][2];
+    (*the_rate_matrix)[0][4 + 2*Nminus1 -1] = N2 * mu[0][2];
     //(N-1)G can only come from monomorphic state G, i.e. i=1
     //(N-1)G is at the begining of the submatrix, j=4+N
-    (*theRateMatrix)[2][4 + Nminus1] = N2 * mu[2][0];
+    (*the_rate_matrix)[2][4 + Nminus1] = N2 * mu[2][0];
 
     //The 4+2Nminus1..4+3Nminus1 states are the AT matrix
     //Only 2 entries can differ from 0, (N-1)A and (N-1)T
     //(N-1)A can only come from monomorphic state A, i.e. i=0
     //(N-1)A is at the end of the submatrix, j=4+3*Nminus1
-    (*theRateMatrix)[0][4 + 3*Nminus1 -1] = N2 * mu[0][3];
+    (*the_rate_matrix)[0][4 + 3*Nminus1 -1] = N2 * mu[0][3];
     //(N-1)T can only come from monomorphic state T, i.e. i=1
     //(N-1)T is at the begining of the submatrix, j=4+N
-    (*theRateMatrix)[3][4 + 2*Nminus1] = N2 * mu[3][0];
+    (*the_rate_matrix)[3][4 + 2*Nminus1] = N2 * mu[3][0];
 
     //The 4+3Nminus1..4+4Nminus1 states are the CG matrix
     //Only 2 entries can differ from 0, (N-1)C and (N-1)G
     //(N-1)C can only come from monomorphic state C, i.e. i=0
     //(N-1)C is at the end of the submatrix, j=4+4*Nminus1
-    (*theRateMatrix)[1][4 + 4*Nminus1 -1] = N2 * mu[1][2];
+    (*the_rate_matrix)[1][4 + 4*Nminus1 -1] = N2 * mu[1][2];
     //(N-1)G can only come from monomorphic state G, i.e. i=1
     //(N-1)G is at the begining of the submatrix, j=4+N
-    (*theRateMatrix)[2][4 + 3*Nminus1] = N2 * mu[2][1];
+    (*the_rate_matrix)[2][4 + 3*Nminus1] = N2 * mu[2][1];
 
     //The 4+4Nminus1..4+5Nminus1 states are the CT matrix
     //Only 2 entries can differ from 0, (N-1)C and (N-1)T
     //(N-1)C can only come from monomorphic state C, i.e. i=0
     //(N-1)C is at the end of the submatrix, j=4+5*Nminus1
-    (*theRateMatrix)[1][4 + 5*Nminus1 -1] = N2 * mu[1][3];
+    (*the_rate_matrix)[1][4 + 5*Nminus1 -1] = N2 * mu[1][3];
     //(N-1)T can only come from monomorphic state T, i.e. i=1
     //(N-1)T is at the begining of the submatrix, j=4+N
-    (*theRateMatrix)[3][4 + 4*Nminus1] = N2 * mu[3][1];
+    (*the_rate_matrix)[3][4 + 4*Nminus1] = N2 * mu[3][1];
 
     //The 4+5Nminus1..4+6Nminus1 states are the GT matrix
     //Only 2 entries can differ from 0, (N-1)G and (N-1)T
     //(N-1)G can only come from monomorphic state G, i.e. i=0
     //(N-1)G is at the end of the submatrix, j=4+5*Nminus1
-    (*theRateMatrix)[2][4 + 6*Nminus1 -1] = N2 * mu[2][3];
+    (*the_rate_matrix)[2][4 + 6*Nminus1 -1] = N2 * mu[2][3];
     //(N-1)T can only come from monomorphic state T, i.e. i=1
     //(N-1)T is at the begining of the submatrix, j=4+N
-    (*theRateMatrix)[3][4 + 5*Nminus1] = N2 * mu[3][2];
+    (*the_rate_matrix)[3][4 + 5*Nminus1] = N2 * mu[3][2];
 
 
     //Now we move from a polymorphic state to a monomorphic state
@@ -163,79 +173,79 @@ void RateMatrix_Pomo::buildRateMatrix(void)
     //(N-1)A can only go to monomorphic state A, i.e. j=0
     //(N-1)A is at the end of the submatrix, i=4+N-1
     
-    (*theRateMatrix)[4 + Nminus1 - 1][0] = computeEntryFromMoranProcessWithSelection(0, 1, Nminus1d);
+    (*the_rate_matrix)[4 + Nminus1 - 1][0] = computeEntryFromMoranProcessWithSelection(0, 1, Nminus1d);
 //    double temp = (N-1)*(1+s[0]-s[1]);
-  //  (*theRateMatrix)[4 + Nminus1 - 1][0] = temp / ( temp + 1) * (1) / N;
+  //  (*the_rate_matrix)[4 + Nminus1 - 1][0] = temp / ( temp + 1) * (1) / N;
     //(N-1)C can only go to monomorphic state C, i.e. j=1
     //(N-1)C is at the begining of the submatrix, i=4
    // temp = (N-1)*(1+s[1]-s[0]);
-    (*theRateMatrix)[4 ][1] = computeEntryFromMoranProcessWithSelection(1, 0, Nminus1d);
-  //  (*theRateMatrix)[4 ][1] = temp / ( temp + 1) * (1) / N;
+    (*the_rate_matrix)[4 ][1] = computeEntryFromMoranProcessWithSelection(1, 0, Nminus1d);
+  //  (*the_rate_matrix)[4 ][1] = temp / ( temp + 1) * (1) / N;
 
     //The 4+Nminus1..4+2Nminus1 states are the AG matrix
     //Only 2 entries can differ from 0, (N-1)A going to mono A and (N-1)G going to mono G
     //(N-1)A can only go to monomorphic state A, i.e. j=0
     //(N-1)A is at the end of the submatrix, i=4+2*(Nminus1)
   //  temp = (N-1)*(1+s[0]-s[2]);
-    (*theRateMatrix)[4 + 2*Nminus1 - 1][0] = computeEntryFromMoranProcessWithSelection(0, 2, Nminus1d);
-  //  (*theRateMatrix)[4 + 2*Nminus1 - 1][0] = temp / ( temp + 1) * (1) / N;
+    (*the_rate_matrix)[4 + 2*Nminus1 - 1][0] = computeEntryFromMoranProcessWithSelection(0, 2, Nminus1d);
+  //  (*the_rate_matrix)[4 + 2*Nminus1 - 1][0] = temp / ( temp + 1) * (1) / N;
     //(N-1)G can only go to monomorphic state G, i.e. j=2
     //(N-1)G is at the begining of the submatrix, i=4
   //  temp = (N-1)*(1+s[2]-s[0]);
-    (*theRateMatrix)[4 + Nminus1 ][2] = computeEntryFromMoranProcessWithSelection(2, 0, Nminus1d);
-   // (*theRateMatrix)[4 + Nminus1 ][2] = temp / ( temp + 1) * (1) / N;
+    (*the_rate_matrix)[4 + Nminus1 ][2] = computeEntryFromMoranProcessWithSelection(2, 0, Nminus1d);
+   // (*the_rate_matrix)[4 + Nminus1 ][2] = temp / ( temp + 1) * (1) / N;
 
     //The 4+2Nminus1..4+3Nminus1 states are the AT matrix
     //Only 2 entries can differ from 0, (N-1)A going to mono A and (N-1)T going to mono T
     //(N-1)A can only go to monomorphic state A, i.e. j=0
     //(N-1)A is at the end of the submatrix, i=4+3*(Nminus1)
 //    temp = (N-1)*(1+s[0]-s[3]);
-    (*theRateMatrix)[4 + 3*Nminus1 - 1][0] = computeEntryFromMoranProcessWithSelection(0, 3, Nminus1d);
-   // (*theRateMatrix)[4 + 3*Nminus1 - 1][0] = temp / ( temp + 1) * (1) / N;
+    (*the_rate_matrix)[4 + 3*Nminus1 - 1][0] = computeEntryFromMoranProcessWithSelection(0, 3, Nminus1d);
+   // (*the_rate_matrix)[4 + 3*Nminus1 - 1][0] = temp / ( temp + 1) * (1) / N;
     //(N-1)T can only go to monomorphic state T, i.e. j=3
     //(N-1)T is at the begining of the submatrix, i=4+ 2*Nminus1
    // temp = (N-1)*(1+s[3]-s[0]);
-    (*theRateMatrix)[4 + 2*Nminus1 ][3] = computeEntryFromMoranProcessWithSelection(3, 0, Nminus1d);
-   // (*theRateMatrix)[4 + 2*Nminus1 ][3] = temp / ( temp + 1) * (1) / N;
+    (*the_rate_matrix)[4 + 2*Nminus1 ][3] = computeEntryFromMoranProcessWithSelection(3, 0, Nminus1d);
+   // (*the_rate_matrix)[4 + 2*Nminus1 ][3] = temp / ( temp + 1) * (1) / N;
 
     //The 4+3Nminus1..4+4Nminus1 states are the CG matrix
     //Only 2 entries can differ from 0, (N-1)C going to mono C and (N-1)G going to mono G
     //(N-1)C can only go to monomorphic state C, i.e. j=1
     //(N-1)C is at the end of the submatrix, i=4+4*(Nminus1)
   //  temp = (N-1)*(1+s[1]-s[2]);
-    (*theRateMatrix)[4 + 4*Nminus1 - 1][1] = computeEntryFromMoranProcessWithSelection(1, 2, Nminus1d);
-//    (*theRateMatrix)[4 + 4*Nminus1 - 1][1] = temp / ( temp + 1) * (1) / N;
+    (*the_rate_matrix)[4 + 4*Nminus1 - 1][1] = computeEntryFromMoranProcessWithSelection(1, 2, Nminus1d);
+//    (*the_rate_matrix)[4 + 4*Nminus1 - 1][1] = temp / ( temp + 1) * (1) / N;
     //(N-1)G can only go to monomorphic state G, i.e. j=2
     //(N-1)G is at the begining of the submatrix, i=4
  //   temp = (N-1)*(1+s[2]-s[1]);
-     (*theRateMatrix)[4 + 3*Nminus1 ][2] = computeEntryFromMoranProcessWithSelection(2, 1, Nminus1d);
-  //  (*theRateMatrix)[4 + 3*Nminus1 ][2] = temp / ( temp + 1) * (1) / N;
+     (*the_rate_matrix)[4 + 3*Nminus1 ][2] = computeEntryFromMoranProcessWithSelection(2, 1, Nminus1d);
+  //  (*the_rate_matrix)[4 + 3*Nminus1 ][2] = temp / ( temp + 1) * (1) / N;
     
     //The 4+4Nminus1..4+5Nminus1 states are the CT matrix
     //Only 2 entries can differ from 0, (N-1)C going to mono C and (N-1)T going to mono T
     //(N-1)C can only go to monomorphic state C, i.e. j=1
     //(N-1)C is at the end of the submatrix, i=4+5*(Nminus1)
  //   temp = (N-1)*(1+s[1]-s[3]);
-   (*theRateMatrix)[4 + 5*Nminus1 - 1][1] =computeEntryFromMoranProcessWithSelection(1, 3, Nminus1d);
-  //  (*theRateMatrix)[4 + 5*Nminus1 - 1][1] = temp / ( temp + 1) * (1) / N;
+   (*the_rate_matrix)[4 + 5*Nminus1 - 1][1] =computeEntryFromMoranProcessWithSelection(1, 3, Nminus1d);
+  //  (*the_rate_matrix)[4 + 5*Nminus1 - 1][1] = temp / ( temp + 1) * (1) / N;
     //(N-1)T can only go to monomorphic state T, i.e. j=3
     //(N-1)T is at the begining of the submatrix, i=4
  //   temp = (N-1)*(1+s[3]-s[1]);
-    (*theRateMatrix)[4 + 4*Nminus1 ][3] =computeEntryFromMoranProcessWithSelection(3, 1, Nminus1d);
-  //  (*theRateMatrix)[4 + 4*Nminus1 ][3] = temp / ( temp + 1) * (1) / N;
+    (*the_rate_matrix)[4 + 4*Nminus1 ][3] =computeEntryFromMoranProcessWithSelection(3, 1, Nminus1d);
+  //  (*the_rate_matrix)[4 + 4*Nminus1 ][3] = temp / ( temp + 1) * (1) / N;
 
     //The 4+5Nminus1..4+6Nminus1 states are the GT matrix
     //Only 2 entries can differ from 0, (N-1)G going to mono G and (N-1)T going to mono T
     //(N-1)G can only go to monomorphic state G, i.e. j=2
     //(N-1)G is at the end of the submatrix, i=4+6*(Nminus1)
   //  temp = (N-1)*(1+s[2]-s[3]);
-    (*theRateMatrix)[4 + 6*Nminus1 - 1][2] = computeEntryFromMoranProcessWithSelection(2, 3, Nminus1d);
-  //  (*theRateMatrix)[4 + 6*Nminus1 - 1][2] = temp / ( temp + 1) * (1) / N;
+    (*the_rate_matrix)[4 + 6*Nminus1 - 1][2] = computeEntryFromMoranProcessWithSelection(2, 3, Nminus1d);
+  //  (*the_rate_matrix)[4 + 6*Nminus1 - 1][2] = temp / ( temp + 1) * (1) / N;
     //(N-1)T can only go to monomorphic state T, i.e. j=3
     //(N-1)T is at the begining of the submatrix, i=4
   //  temp = (N-1)*(1+s[3]-s[2]);
-    (*theRateMatrix)[4 + 5*Nminus1 ][3] = computeEntryFromMoranProcessWithSelection(3, 2, Nminus1d);
-   // (*theRateMatrix)[4 + 5*Nminus1 ][3] = temp / ( temp + 1) * (1) / N;
+    (*the_rate_matrix)[4 + 5*Nminus1 ][3] = computeEntryFromMoranProcessWithSelection(3, 2, Nminus1d);
+   // (*the_rate_matrix)[4 + 5*Nminus1 ][3] = temp / ( temp + 1) * (1) / N;
 
     
     //Now we need to fill the rest of the matrix, i.e. the B matrices along the diagonal.
@@ -266,8 +276,8 @@ void RateMatrix_Pomo::buildRateMatrix(void)
         
         for (size_t i = 1; i <= N-2 ; ++i){
             size_t j = i+1;
-            (*theRateMatrix)[3+i+Nminus1*k][3+j+Nminus1*k] = (f1*i/(f1*i + f2*(N-i)) * (N-i)/N);
-            (*theRateMatrix)[3+j+Nminus1*k][3+i+Nminus1*k] = (f2*j/(f2*j + f1*(N-j)) * (N-j)/N);
+            (*the_rate_matrix)[3+i+Nminus1*k][3+j+Nminus1*k] = (f1*i/(f1*i + f2*(N-i)) * (N-i)/N);
+            (*the_rate_matrix)[3+j+Nminus1*k][3+i+Nminus1*k] = (f2*j/(f2*j + f1*(N-j)) * (N-j)/N);
         }
 
     }
@@ -277,37 +287,37 @@ void RateMatrix_Pomo::buildRateMatrix(void)
    /* double sum = 0.0;
     for (size_t i=0; i< matrixSize; i++)
     {
-        sum += (*theRateMatrix)[0][i];
+        sum += (*the_rate_matrix)[0][i];
     }
-    (*theRateMatrix)[0][0] = 0-sum;
+    (*the_rate_matrix)[0][0] = 0-sum;
     
     sum = 0.0;
     for (size_t i=0; i< matrixSize; i++)
     {
-        sum += (*theRateMatrix)[1][i];
+        sum += (*the_rate_matrix)[1][i];
     }
-    (*theRateMatrix)[1][1] = 0-sum;
+    (*the_rate_matrix)[1][1] = 0-sum;
     
     sum = 0.0;
     for (size_t i=0; i< matrixSize; i++)
     {
-        sum += (*theRateMatrix)[2][i];
+        sum += (*the_rate_matrix)[2][i];
     }
-    (*theRateMatrix)[2][2] = 0-sum;
+    (*the_rate_matrix)[2][2] = 0-sum;
     
     sum = 0.0;
     for (size_t i=0; i< matrixSize; i++)
     {
-        sum += (*theRateMatrix)[3][i];
+        sum += (*the_rate_matrix)[3][i];
     }
-    (*theRateMatrix)[3][3] = 0-sum;*/
+    (*the_rate_matrix)[3][3] = 0-sum;*/
     
     /*
     for (size_t i=0; i< matrixSize; i++)
     {
         for (size_t j=0; j< matrixSize; j++)
         {
-        (*theRateMatrix)[i][j] *= (double) N;
+        (*the_rate_matrix)[i][j] *= (double) N;
         }
     }
     */
@@ -324,7 +334,7 @@ void RateMatrix_Pomo::buildRateMatrix(void)
     //Then we remove the identity matrix
   /*  for (size_t i=0; i< matrixSize; i++)
     {
-        (*theRateMatrix)[i][i] = (*theRateMatrix)[i][i] - 1 ;
+        (*the_rate_matrix)[i][i] = (*the_rate_matrix)[i][i] - 1 ;
     }*/
 }
 
@@ -341,11 +351,12 @@ double RateMatrix_Pomo::computeEntryFromMoranProcessWithSelection(size_t state1,
 
 
 /** Calculate the transition probabilities */
-void RateMatrix_Pomo::calculateTransitionProbabilities(double t, TransitionProbabilityMatrix& P) const {
+void RateMatrix_Pomo::calculateTransitionProbabilities(double startAge, double endAge, double rate, TransitionProbabilityMatrix& P) const {
    // std::cout << "In calculateTransitionProbabilities: "<< t <<std::endl;
     
     //Now the instantaneous rate matrix has been filled up entirely.
     //We use repeated squaring to quickly obtain exponentials, as in Poujol and Lartillot, Bioinformatics 2014.
+    double t = rate * (startAge - endAge);
     computeExponentialMatrixByRepeatedSquaring(t, P);
     
 /*    for (size_t i = 0 ; i<58; ++i) {
@@ -367,7 +378,7 @@ void RateMatrix_Pomo::computeExponentialMatrixByRepeatedSquaring(double t,  Tran
     double tOver2s = t/(1024);
     for ( size_t i = 0; i < matrixSize; i++ ) {
         for ( size_t j = 0; j < matrixSize; j++ ) {
-            P[i][j] = (*theRateMatrix)[i][j] * tOver2s; 
+            P[i][j] = (*the_rate_matrix)[i][j] * tOver2s; 
         }
     }
     //Add the identity matrix:
@@ -404,28 +415,32 @@ inline void RateMatrix_Pomo::squareMatrix( TransitionProbabilityMatrix& P,  Tran
 
 
 
-RateMatrix_Pomo* RateMatrix_Pomo::clone( void ) const {
+RateMatrix_Pomo* RateMatrix_Pomo::clone( void ) const
+{
     return new RateMatrix_Pomo( *this );
 }
 
-const std::vector<double>& RateMatrix_Pomo::getStationaryFrequencies( void ) const {
+std::vector<double> RateMatrix_Pomo::getStationaryFrequencies( void ) const
+{
     
-    return stationaryFreqs;
+    return stationary_freqs;
 }
 
 
-void RateMatrix_Pomo::updateMatrix( void ) {
+void RateMatrix_Pomo::update( void )
+{
     
-    if ( needsUpdate )
+    if ( needs_update )
     {
         buildRateMatrix();
         // clean flags
-        needsUpdate = false;
+        needs_update = false;
     }
 }
 
 
-void RateMatrix_Pomo::setMutationRates(const std::vector<double>& mr) {
+void RateMatrix_Pomo::setMutationRates(const std::vector<double>& mr)
+{
 
     mu[0][1] = mr[0];
     mu[0][2] = mr[1];
@@ -442,20 +457,23 @@ void RateMatrix_Pomo::setMutationRates(const std::vector<double>& mr) {
 }
 
 
-void RateMatrix_Pomo::setMutationRates(const RateMatrix& mm) {
+void RateMatrix_Pomo::setMutationRates(const RateGenerator& mm)
+{
     
-    mu[0][1] = mm[0][1];
-    mu[0][2] = mm[0][2];
-    mu[0][3] = mm[0][3];
-    mu[1][0] = mm[1][0];
-    mu[1][2] = mm[1][2];
-    mu[1][3] = mm[1][3];
-    mu[2][0] = mm[2][0];
-    mu[2][1] = mm[2][1];
-    mu[2][3] = mm[2][3];
-    mu[3][0] = mm[3][0];
-    mu[3][1] = mm[3][1];
-    mu[3][2] = mm[3][2];
+    double age = 0.0;
+    double rate = 1.0;
+    mu[0][1] = mm.getRate(0,1,age,rate);
+    mu[0][2] = mm.getRate(0,2,age,rate);
+    mu[0][3] = mm.getRate(0,3,age,rate);
+    mu[1][0] = mm.getRate(1,0,age,rate);
+    mu[1][2] = mm.getRate(1,2,age,rate);
+    mu[1][3] = mm.getRate(1,3,age,rate);
+    mu[2][0] = mm.getRate(2,0,age,rate);
+    mu[2][1] = mm.getRate(2,1,age,rate);
+    mu[2][3] = mm.getRate(2,3,age,rate);
+    mu[3][0] = mm.getRate(3,0,age,rate);
+    mu[3][1] = mm.getRate(3,1,age,rate);
+    mu[3][2] = mm.getRate(3,2,age,rate);
 }
 
 

@@ -18,45 +18,44 @@
 
 using namespace RevLanguage;
 
-Func__and::Func__and() : Function() {
+Func__and::Func__and() : TypedFunction<RlBoolean>()
+{
     
 }
 
 /* Clone object */
-Func__and* Func__and::clone( void ) const {
+Func__and* Func__and::clone( void ) const
+{
     
     return new Func__and( *this );
 }
 
 
-/** Execute function: We rely on getValue and overloaded push_back to provide functionality */
-RevPtr<Variable> Func__and::execute( void ) {
+RevBayesCore::TypedFunction<RevBayesCore::Boolean>* Func__and::createFunction( void ) const
+{
     
-    const RevBayesCore::TypedDagNode<bool>* leftVal = static_cast<const RlBoolean &>( args[0].getVariable()->getRevObject() ).getDagNode();
-    const RevBayesCore::TypedDagNode<bool>* rightVal = static_cast<const RlBoolean &>( args[1].getVariable()->getRevObject() ).getDagNode();
+    const RevBayesCore::TypedDagNode<RevBayesCore::Boolean>* leftVal = static_cast<const RlBoolean &>( args[0].getVariable()->getRevObject() ).getDagNode();
+    const RevBayesCore::TypedDagNode<RevBayesCore::Boolean>* rightVal = static_cast<const RlBoolean &>( args[1].getVariable()->getRevObject() ).getDagNode();
     
     RevBayesCore::LogicalAndFunction *func = new RevBayesCore::LogicalAndFunction( leftVal, rightVal );
-
-    DeterministicNode<bool> *detNode = new DeterministicNode<bool>("", func, this->clone());
     
-    RlBoolean *theBool = new RlBoolean( detNode );
-    
-    return new Variable( theBool );
+    return func;
 }
 
 
 /** Get argument rules */
-const ArgumentRules& Func__and::getArgumentRules( void ) const {
+const ArgumentRules& Func__and::getArgumentRules( void ) const
+{
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet )
+    if ( !rules_set )
     {
         
-        argumentRules.push_back( new ArgumentRule( "", RlBoolean::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        argumentRules.push_back( new ArgumentRule( "", RlBoolean::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        rulesSet = true;
+        argumentRules.push_back( new ArgumentRule( "", RlBoolean::getClassTypeSpec(), "The left hand side variable.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        argumentRules.push_back( new ArgumentRule( "", RlBoolean::getClassTypeSpec(), "The right hand side variable.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        rules_set = true;
         
     }
     
@@ -65,7 +64,8 @@ const ArgumentRules& Func__and::getArgumentRules( void ) const {
 
 
 /** Get Rev type of object */
-const std::string& Func__and::getClassType(void) { 
+const std::string& Func__and::getClassType(void)
+{
     
     static std::string revType = "Func__and";
     
@@ -74,26 +74,33 @@ const std::string& Func__and::getClassType(void) {
 
 
 /** Get class type spec describing type of object */
-const TypeSpec& Func__and::getClassTypeSpec(void) { 
+const TypeSpec& Func__and::getClassTypeSpec(void)
+{
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
+}
+
+
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func__and::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "and";
+    
+    return f_name;
 }
 
 
 /** Get type spec */
-const TypeSpec& Func__and::getTypeSpec( void ) const {
+const TypeSpec& Func__and::getTypeSpec( void ) const
+{
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
-}
-
-
-/** Get return type */
-const TypeSpec& Func__and::getReturnType( void ) const {
-    
-    return RlBoolean::getClassTypeSpec();
+    return type_spec;
 }
 

@@ -10,7 +10,7 @@
  * @author The RevBayes Development Core Team
  * @license GPL version 3
  *
- * $Id: RateMatrix.h 1901 2012-12-05 20:20:37Z boussau $
+ * $Id: RateMatrix.h 1901 2012-12-05 20:20:37Z wrightam $
  */
 
 #ifndef RateMatrix_LG_H
@@ -27,11 +27,10 @@ namespace RevBayesCore {
         
     public:
         RateMatrix_LG(void);                                                                                                //!< Construct rate matrix with n states
-        RateMatrix_LG(const RateMatrix_LG& m);                                                                                  //!< Copy constructor
-        virtual                            ~RateMatrix_LG(void);                                                               //!< Destructor
+        virtual                             ~RateMatrix_LG(void);                                                               //!< Destructor
         
         // RateMatrix functions
-        RateMatrix_LG*                      clone(void) const;
+        RateMatrix_LG*                     clone(void) const;
         
     private:
         

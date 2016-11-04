@@ -47,8 +47,7 @@ RevBayesCore::ExponentialDistribution* Dist_exponential::createDistribution( voi
 {
     // get the parameters
     RevBayesCore::TypedDagNode<double>* l       = static_cast<const RealPos &>( lambda->getRevObject() ).getDagNode();
-    RevBayesCore::TypedDagNode<double>* o       = static_cast<const RealPos &>( offset->getRevObject() ).getDagNode();
-    RevBayesCore::ExponentialDistribution* d    = new RevBayesCore::ExponentialDistribution( l, o );
+    RevBayesCore::ExponentialDistribution* d    = new RevBayesCore::ExponentialDistribution( l );
     
     return d;
 }
@@ -77,11 +76,41 @@ const std::string& Dist_exponential::getClassType(void)
 const TypeSpec& Dist_exponential::getClassTypeSpec(void) 
 { 
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( PositiveContinuousDistribution::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( PositiveContinuousDistribution::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
+
+/**
+ * Get the alternative Rev names (aliases) for the constructor function.
+ *
+ * \return Rev aliases of constructor function.
+ */
+std::vector<std::string> Dist_exponential::getDistributionFunctionAliases( void ) const
+{
+    // create alternative constructor function names variable that is the same for all instance of this class
+    std::vector<std::string> a_names;
+    a_names.push_back( "exp" );
+    
+    return a_names;
+}
+
+
+/**
+ * Get the Rev name for the distribution.
+ * This name is used for the constructor and the distribution functions,
+ * such as the density and random value function
+ *
+ * \return Rev name of constructor function.
+ */
+std::string Dist_exponential::getDistributionFunctionName( void ) const
+{
+    // create a distribution name variable that is the same for all instance of this class
+    std::string d_name = "exponential";
+    
+    return d_name;
+}
 
 
 /** 
@@ -95,18 +124,17 @@ const TypeSpec& Dist_exponential::getClassTypeSpec(void)
 const MemberRules& Dist_exponential::getParameterRules(void) const 
 {
     
-    static MemberRules distMemberRules;
-    static bool rulesSet = false;
+    static MemberRules dist_member_rules;
+    static bool rules_set = false;
     
-    if ( !rulesSet ) 
+    if ( !rules_set ) 
     {
-        distMemberRules.push_back( new ArgumentRule( "lambda", RealPos::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY, new Real(1.0) ) );
-        distMemberRules.push_back( new ArgumentRule( "offset", RealPos::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY, new Real(0.0) ) );
+        dist_member_rules.push_back( new ArgumentRule( "lambda", RealPos::getClassTypeSpec(), "The rate ( rate==1/mean) parameter.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY, new Real(1.0) ) );
         
-        rulesSet = true;
+        rules_set = true;
     }
     
-    return distMemberRules;
+    return dist_member_rules;
 }
 
 
@@ -135,16 +163,12 @@ const TypeSpec& Dist_exponential::getTypeSpec( void ) const
  * \param[in]    name     Name of the member variable.
  * \param[in]    var      Pointer to the variable.
  */
-void Dist_exponential::setConstParameter(const std::string& name, const RevPtr<const Variable> &var) 
+void Dist_exponential::setConstParameter(const std::string& name, const RevPtr<const RevVariable> &var) 
 {
     
     if ( name == "lambda" ) 
     {
         lambda = var;
-    }
-    else if ( name == "offset" ) 
-    {
-        offset = var;
     }
     else 
     {

@@ -2,7 +2,7 @@
 #include "Func_writeFasta.h"
 #include "RbException.h"
 #include "RevNullObject.h"
-#include "RlAbstractCharacterData.h"
+#include "RlAbstractHomologousDiscreteCharacterData.h"
 #include "RlDnaState.h"
 #include "RlString.h"
 #include "FastaWriter.h"
@@ -33,12 +33,12 @@ Func_writeFasta* Func_writeFasta::clone( void ) const
  *
  * \return NULL because the output is going into a file
  */
-RevPtr<Variable> Func_writeFasta::execute( void ) 
+RevPtr<RevVariable> Func_writeFasta::execute( void ) 
 {
     
     // get the information from the arguments for reading the file
     const RlString& fn = static_cast<const RlString&>( args[0].getVariable()->getRevObject() );
-    const RevBayesCore::AbstractCharacterData &data = static_cast< const AbstractCharacterData & >( args[1].getVariable()->getRevObject() ).getValue();
+    const RevBayesCore::AbstractHomologousDiscreteCharacterData &data = static_cast< const AbstractHomologousDiscreteCharacterData & >( args[1].getVariable()->getRevObject() ).getValue();
     
     RevBayesCore::FastaWriter fw;
     fw.writeData(fn.getValue(), data);
@@ -60,13 +60,13 @@ const ArgumentRules& Func_writeFasta::getArgumentRules( void ) const
 {
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool rulesSet = false;
+    static bool rules_set = false;
     
-    if (!rulesSet) 
+    if (!rules_set) 
     {
-        argumentRules.push_back( new ArgumentRule( "filename", RlString::getClassTypeSpec()             , ArgumentRule::BY_VALUE ) );
-        argumentRules.push_back( new ArgumentRule( "data"    , AbstractCharacterData::getClassTypeSpec(), ArgumentRule::BY_VALUE ) );
-        rulesSet = true;
+        argumentRules.push_back( new ArgumentRule( "filename", RlString::getClassTypeSpec(), "The name of the file.", ArgumentRule::BY_VALUE, ArgumentRule::ANY ) );
+        argumentRules.push_back( new ArgumentRule( "data"    , AbstractHomologousDiscreteCharacterData::getClassTypeSpec(), "The character data object.", ArgumentRule::BY_VALUE, ArgumentRule::ANY ) );
+        rules_set = true;
     }
     
     return argumentRules;
@@ -95,9 +95,21 @@ const std::string& Func_writeFasta::getClassType(void)
 const TypeSpec& Func_writeFasta::getClassTypeSpec(void) 
 { 
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
+}
+
+
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func_writeFasta::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "writeFasta";
+    
+    return f_name;
 }
 
 
@@ -109,9 +121,9 @@ const TypeSpec& Func_writeFasta::getClassTypeSpec(void)
 const TypeSpec& Func_writeFasta::getTypeSpec( void ) const 
 {
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }
 
 

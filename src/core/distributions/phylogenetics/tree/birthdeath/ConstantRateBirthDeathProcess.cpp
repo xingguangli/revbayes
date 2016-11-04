@@ -5,40 +5,48 @@
 #include "RbConstants.h"
 #include "RbMathCombinatorialFunctions.h"
 #include "TopologyNode.h"
-#include "Topology.h"
 
 #include <algorithm>
 #include <cmath>
 
 using namespace RevBayesCore;
 
-ConstantRateBirthDeathProcess::ConstantRateBirthDeathProcess(const TypedDagNode<double> *org, const TypedDagNode<double> *ra, const TypedDagNode<double> *s, const TypedDagNode<double> *e,
-                                                     const TypedDagNode<double> *r, const std::string& ss, const std::string &cdt,
-                                                     const std::vector<Taxon> &tn, const std::vector<Clade> &c) : BirthDeathProcess( org, ra, r, ss, cdt, tn, c ),
+ConstantRateBirthDeathProcess::ConstantRateBirthDeathProcess(const TypedDagNode<double> *ra, const TypedDagNode<double> *s, const TypedDagNode<double> *e,
+                                                     const TypedDagNode<double> *r, const std::string& ss, const std::vector<Clade> &ic, const std::string &cdt,
+                                                     const std::vector<Taxon> &tn) : BirthDeathProcess( ra, r, ss, ic, cdt, tn ),
     speciation( s ),
     extinction( e )
 {
+    addParameter( speciation );
+    addParameter( extinction );
 
     simulateTree();
 
 }
 
 
-
-ConstantRateBirthDeathProcess* ConstantRateBirthDeathProcess::clone( void ) const {
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'B'.
+ *
+ * \return A new copy of myself
+ */
+ConstantRateBirthDeathProcess* ConstantRateBirthDeathProcess::clone( void ) const
+{
     
     return new ConstantRateBirthDeathProcess( *this );
 }
 
 
 
-double ConstantRateBirthDeathProcess::lnSpeciationRate(double t) const {
-    
-    return log( speciation->getValue() );
+double ConstantRateBirthDeathProcess::lnSpeciationRate(double t) const
+{
+    double ln_lambda = log( speciation->getValue() );
+    return ln_lambda;
 }
 
 
-double ConstantRateBirthDeathProcess::pSurvival(double start, double end) const 
+double ConstantRateBirthDeathProcess::computeProbabilitySurvival(double start, double end) const 
 {
     
     // compute the rate
@@ -47,16 +55,18 @@ double ConstantRateBirthDeathProcess::pSurvival(double start, double end) const
     double rate = mu - lambda;
     
     // do the integration of int_{t_low}^{t_high} ( mu(s) exp(rate(t,s)) ds )
-    // where rate(t,s) = int_{t}^{s} ( mu(x)-lambda(x) dx ) 
+    // where rate(t,s) = int_{t}^{s} ( mu(x)-lambda(x) dx )
     
-    double den = 1.0 + ( exp(-rate*start) * mu / rate ) * ( exp(rate*end) - exp(rate*start) );
+//    double den = 1.0 + ( exp(-rate*start) * mu / rate ) * ( exp(rate*end) - exp(rate*start) );
+    double den = 1.0 + mu / rate * ( exp(rate*(end-start)) - 1 );
     
     return (1.0 / den);
 }
 
 
 
-double ConstantRateBirthDeathProcess::rateIntegral(double t_low, double t_high) const {
+double ConstantRateBirthDeathProcess::rateIntegral(double t_low, double t_high) const
+{
     
     double rate = (speciation->getValue() - extinction->getValue()) * (t_low - t_high);
         
@@ -65,53 +75,41 @@ double ConstantRateBirthDeathProcess::rateIntegral(double t_low, double t_high) 
 
 
 
-std::vector<double>* ConstantRateBirthDeathProcess::simSpeciations(size_t n, double origin, double r) const
+double ConstantRateBirthDeathProcess::simulateDivergenceTime(double origin, double present, double rho) const
 {
 
     // Get the rng
     RandomNumberGenerator* rng = GLOBAL_RNG;
     
-    std::vector<double>* times = new std::vector<double>(n, 0.0);
+    // get the parameters
+    double age = present - origin;
+    double b = speciation->getValue();
+    double d = extinction->getValue();
     
-    for (size_t i = 0; i < n; ++i) 
+ 
+    // get a random draw
+    double u = rng->uniform01();
+
+    
+    // compute the time for this draw
+    double t = 0.0;
+    if ( b > d )
     {
-        double u = rng->uniform01();
-    
-        // get the parameters
-        double lambda = speciation->getValue()*r;
-        double mu = extinction->getValue() - speciation->getValue()*(1.0-r);
-        double div = lambda - mu;
-    
-        double t = 1.0/div * log((lambda - mu * exp((-div)*origin) - mu * (1.0 - exp((-div) * origin)) * u )/(lambda - mu * exp((-div) * origin) - lambda * (1.0 - exp(( -div ) * origin)) * u ) );  
-	
-        (*times)[i] = t;
+        t = ( log( ( (b-d) / (1 - (u)*(1-((b-d)*exp((d-b)*age))/(rho*b+(b*(1-rho)-d)*exp((d-b)*age) ) ) ) - (b*(1-rho)-d) ) / (rho * b) ) + (d-b)*age )  /  (d-b);
+    }
+    else
+    {
+        t = ( log( ( (b-d) / (1 - (u)*(1-(b-d)/(rho*b*exp((b-d)*age)+(b*(1-rho)-d) ) ) ) - (b*(1-rho)-d) ) / (rho * b) ) + (d-b)*age )  /  (d-b);
     }
     
-    // finally sort the times
-    std::sort(times->begin(), times->end());
-    
-    return times;
-}
-
-
-
-
-/** Get the parameters of the distribution */
-std::set<const DagNode*> ConstantRateBirthDeathProcess::getParameters( void ) const
-{
-    std::set<const DagNode*> parameters= BirthDeathProcess::getParameters();
-    
-    parameters.insert( speciation );
-    parameters.insert( extinction );
-    
-    parameters.erase( NULL );
-    
-    return parameters;
+//    return present - t;
+    return origin + t;
 }
 
 
 /** Swap a parameter of the distribution */
-void ConstantRateBirthDeathProcess::swapParameter(const DagNode *oldP, const DagNode *newP) {
+void ConstantRateBirthDeathProcess::swapParameterInternal(const DagNode *oldP, const DagNode *newP)
+{
     
     if (oldP == speciation) 
     {
@@ -124,7 +122,7 @@ void ConstantRateBirthDeathProcess::swapParameter(const DagNode *oldP, const Dag
     else 
     {
         // delegate the super-class
-        BirthDeathProcess::swapParameter(oldP, newP);
+        BirthDeathProcess::swapParameterInternal(oldP, newP);
     }
     
 }

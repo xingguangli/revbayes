@@ -18,7 +18,7 @@
 
 using namespace RevLanguage;
 
-Func__unot::Func__unot() : Function() {
+Func__unot::Func__unot() : TypedFunction<RlBoolean>() {
     
 }
 
@@ -29,31 +29,28 @@ Func__unot* Func__unot::clone( void ) const {
 }
 
 
-/** Execute function: We rely on getValue unot overloaded push_back to provide functionality */
-RevPtr<Variable> Func__unot::execute( void ) {
+RevBayesCore::TypedFunction<RevBayesCore::Boolean>* Func__unot::createFunction( void ) const
+{
     
-    const RevBayesCore::TypedDagNode<bool>* val = static_cast<const RlBoolean &>( args[0].getVariable()->getRevObject() ).getDagNode();
+    const RevBayesCore::TypedDagNode<RevBayesCore::Boolean>* val = static_cast<const RlBoolean &>( args[0].getVariable()->getRevObject() ).getDagNode();
     
     RevBayesCore::LogicalUnotFunction *func = new RevBayesCore::LogicalUnotFunction( val );
-
-    DeterministicNode<bool> *detNode = new DeterministicNode<bool>("", func, this->clone());
     
-    RlBoolean *theBool = new RlBoolean( detNode );
-    
-    return new Variable( theBool );
+    return func;
 }
 
 
 /** Get argument rules */
-const ArgumentRules& Func__unot::getArgumentRules( void ) const {
+const ArgumentRules& Func__unot::getArgumentRules( void ) const
+{
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet ) {
+    if ( !rules_set ) {
         
-        argumentRules.push_back( new ArgumentRule( "", RlBoolean::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        rulesSet = true;
+        argumentRules.push_back( new ArgumentRule( "", RlBoolean::getClassTypeSpec(), "The expression.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        rules_set = true;
     }
     
     return argumentRules;
@@ -61,7 +58,8 @@ const ArgumentRules& Func__unot::getArgumentRules( void ) const {
 
 
 /** Get Rev type of object */
-const std::string& Func__unot::getClassType(void) { 
+const std::string& Func__unot::getClassType(void)
+{
     
     static std::string revType = "Func__unot";
     
@@ -70,26 +68,33 @@ const std::string& Func__unot::getClassType(void) {
 
 
 /** Get class type spec describing type of object */
-const TypeSpec& Func__unot::getClassTypeSpec(void) { 
+const TypeSpec& Func__unot::getClassTypeSpec(void)
+{
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
+}
+
+
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func__unot::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "unot";
+    
+    return f_name;
 }
 
 
 /** Get type spec */
-const TypeSpec& Func__unot::getTypeSpec( void ) const {
+const TypeSpec& Func__unot::getTypeSpec( void ) const
+{
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
-}
-
-
-/** Get return type */
-const TypeSpec& Func__unot::getReturnType( void ) const {
-    
-    return RlBoolean::getClassTypeSpec();
+    return type_spec;
 }
 

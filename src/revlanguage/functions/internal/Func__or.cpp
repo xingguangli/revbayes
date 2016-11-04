@@ -18,44 +18,43 @@
 
 using namespace RevLanguage;
 
-Func__or::Func__or() : Function() {
+Func__or::Func__or() : TypedFunction<RlBoolean>() {
     
 }
 
 /* Clone object */
-Func__or* Func__or::clone( void ) const {
+Func__or* Func__or::clone( void ) const
+{
     
     return new Func__or( *this );
 }
 
 
-/** Execute function: We rely on getValue or overloaded push_back to provide functionality */
-RevPtr<Variable> Func__or::execute( void ) {
+RevBayesCore::TypedFunction<RevBayesCore::Boolean>* Func__or::createFunction( void ) const
+{
     
-    const RevBayesCore::TypedDagNode<bool>* leftVal = static_cast<const RlBoolean &>( args[0].getVariable()->getRevObject() ).getDagNode();
-    const RevBayesCore::TypedDagNode<bool>* rightVal = static_cast<const RlBoolean &>( args[1].getVariable()->getRevObject() ).getDagNode();
+    const RevBayesCore::TypedDagNode<RevBayesCore::Boolean>* leftVal = static_cast<const RlBoolean &>( args[0].getVariable()->getRevObject() ).getDagNode();
+    const RevBayesCore::TypedDagNode<RevBayesCore::Boolean>* rightVal = static_cast<const RlBoolean &>( args[1].getVariable()->getRevObject() ).getDagNode();
     
     RevBayesCore::LogicalOrFunction *func = new RevBayesCore::LogicalOrFunction( leftVal, rightVal );
 
-    DeterministicNode<bool> *detNode = new DeterministicNode<bool>("", func, this->clone());
-    
-    RlBoolean *theBool = new RlBoolean( detNode );
-    
-    return new Variable( theBool );
+    return func;
 }
 
 
 /** Get argument rules */
-const ArgumentRules& Func__or::getArgumentRules( void ) const {
+const ArgumentRules& Func__or::getArgumentRules( void ) const
+{
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet ) {
+    if ( !rules_set )
+    {
         
-        argumentRules.push_back( new ArgumentRule( "", RlBoolean::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        argumentRules.push_back( new ArgumentRule( "", RlBoolean::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        rulesSet = true;
+        argumentRules.push_back( new ArgumentRule( "", RlBoolean::getClassTypeSpec(), "first value", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        argumentRules.push_back( new ArgumentRule( "", RlBoolean::getClassTypeSpec(), "second value", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        rules_set = true;
     }
     
     return argumentRules;
@@ -63,7 +62,8 @@ const ArgumentRules& Func__or::getArgumentRules( void ) const {
 
 
 /** Get Rev type of object */
-const std::string& Func__or::getClassType(void) { 
+const std::string& Func__or::getClassType(void)
+{
     
     static std::string revType = "Func__or";
     
@@ -71,27 +71,34 @@ const std::string& Func__or::getClassType(void) {
 }
 
 
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func__or::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "or";
+    
+    return f_name;
+}
+
+
 /** Get class type spec describing type of object */
-const TypeSpec& Func__or::getClassTypeSpec(void) { 
+const TypeSpec& Func__or::getClassTypeSpec(void)
+{
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 
 /** Get type spec */
-const TypeSpec& Func__or::getTypeSpec( void ) const {
+const TypeSpec& Func__or::getTypeSpec( void ) const
+{
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
-}
-
-
-/** Get return type */
-const TypeSpec& Func__or::getReturnType( void ) const {
-    
-    return RlBoolean::getClassTypeSpec();
+    return type_spec;
 }
 

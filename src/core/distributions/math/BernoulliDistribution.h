@@ -1,22 +1,3 @@
-/**
- * @file
- * This file contains the declaration of the Bernoulli distribution class.
- *
- * @brief Declaration of the Bernoulli distribution.
- *
- * (c) Copyright 2009- under GPL version 3
- * @date Last modified: $Date:$
- * @author The RevBayes Development Core Team
- * @license GPL version 3
- * @version 1.0
- * @since 2012-06-17, version 1.0
- * @interface TypedDagNode
- *
- * $Id:$
- */
-
-
-
 #ifndef BernoulliDistribution_H
 #define BernoulliDistribution_H
 
@@ -25,21 +6,34 @@
 
 namespace RevBayesCore {
     
+    /**
+     * @brief Bernoulli distribution class.
+     *
+     * The Bernoulli distribution represents a family of distributions
+     * on the values 0 and 1. The probability of a random variable is computed by
+     * P(X=x) = x*p
+     * The parameter p represents the probability of a succes.
+     * Instances of this class can be associated to stochastic variables.
+     *
+     * @copyright Copyright 2009-
+     * @author The RevBayes Development Core Team (Sebastian Hoehna)
+     * @since 2013-10-09, version 1.0
+     *
+     */
     class BernoulliDistribution : public TypedDistribution<int> {
         
     public:
         BernoulliDistribution(const TypedDagNode<double> *p);
-        BernoulliDistribution(const BernoulliDistribution &n);                                                                      //!< Copy constructor
         virtual                                            ~BernoulliDistribution(void);                                              //!< Virtual destructor
         
         // public member functions
         BernoulliDistribution*                              clone(void) const;                                                          //!< Create an independent clone
         double                                              computeLnProbability(void);
         void                                                redrawValue(void);
-        
+
+    protected:
         // Parameter management functions
-        std::set<const DagNode*>                            getParameters(void) const;                                          //!< Return parameters
-        void                                                swapParameter(const DagNode *oldP, const DagNode *newP);            //!< Swap a parameter
+        void                                                swapParameterInternal(const DagNode *oldP, const DagNode *newP);            //!< Swap a parameter
         
     private:
         

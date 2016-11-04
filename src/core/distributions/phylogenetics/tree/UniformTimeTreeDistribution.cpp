@@ -3,8 +3,8 @@
 #include "RandomNumberGenerator.h"
 #include "RbConstants.h"
 #include "RbMathCombinatorialFunctions.h"
+#include "StochasticNode.h"
 #include "TopologyNode.h"
-#include "Topology.h"
 #include "UniformTimeTreeDistribution.h"
 
 #include <algorithm>
@@ -12,28 +12,19 @@
 
 using namespace RevBayesCore;
 
-UniformTimeTreeDistribution::UniformTimeTreeDistribution(
-                                                            const TypedDagNode<double>*         originT,
-                                                            const std::vector<std::string>&     taxaNames
-                                                         )
-    :   TypedDistribution<TimeTree>( new TimeTree() ),
-        originTime( originT ),
-        taxonNames( taxaNames )
+UniformTimeTreeDistribution::UniformTimeTreeDistribution( const TypedDagNode<double> *a, const std::vector<Taxon> &n) : TypedDistribution<Tree>( new Tree() ),
+    root_age( a ),
+    taxa( n )
 {
+    // add the parameters to our set (in the base class)
+    // in that way other class can easily access the set of our parameters
+    // this will also ensure that the parameters are not getting deleted before we do
+    addParameter( root_age );
     
-    numTaxa = taxonNames.size();
+    num_taxa = taxa.size();
     
     simulateTree();
     
-}
-
-
-UniformTimeTreeDistribution::UniformTimeTreeDistribution(const UniformTimeTreeDistribution &x)
-    :   TypedDistribution<TimeTree>( x ),
-        originTime( x.originTime ),
-        numTaxa( x.numTaxa ),
-        taxonNames( x.taxonNames )
-{
 }
 
 
@@ -47,16 +38,10 @@ UniformTimeTreeDistribution::~UniformTimeTreeDistribution()
  * Recursive call to attach ordered interior node times to the time tree psi. Call it initially with the
  * root of the tree.
  */
-void UniformTimeTreeDistribution::attachTimes(
-                                                TimeTree*                       psi,
-                                                std::vector<TopologyNode *>&    nodes,
-                                                size_t                          index,
-                                                const std::vector<double>&      interiorNodeTimes,
-                                                double                          originTime
-                                              )
+void UniformTimeTreeDistribution::attachTimes(Tree* psi, std::vector<TopologyNode *> &nodes, size_t index, const std::vector<double> &interiorNodeTimes, double originTime )
 {
     
-    if (index < numTaxa-1)
+    if (index < num_taxa-1)
     {
         // Get the rng
         RandomNumberGenerator* rng = GLOBAL_RNG;
@@ -66,7 +51,7 @@ void UniformTimeTreeDistribution::attachTimes(
         
         // Get the node from the list
         TopologyNode* parent = nodes.at(node_index);
-        psi->setAge( parent->getIndex(), originTime - interiorNodeTimes[index] );
+        psi->getNode( parent->getIndex() ).setAge( originTime - interiorNodeTimes[index] );
         
         // Remove the randomly drawn node from the list
         nodes.erase(nodes.begin()+long(node_index));
@@ -88,13 +73,15 @@ void UniformTimeTreeDistribution::attachTimes(
         // Recursive call to this function
         attachTimes(psi, nodes, index+1, interiorNodeTimes, originTime);
     }
+    
 }
 
 
-/** Build random binary tree to size numTaxa. The result is a draw from the uniform distribution on histories. */
-void UniformTimeTreeDistribution::buildRandomBinaryHistory(std::vector<TopologyNode*> &tips) {
+/** Build random binary tree to size num_taxa. The result is a draw from the uniform distribution on histories. */
+void UniformTimeTreeDistribution::buildRandomBinaryHistory(std::vector<TopologyNode*> &tips)
+{
     
-    if (tips.size() < numTaxa)
+    if (tips.size() < num_taxa)
     {
         // Get the rng
         RandomNumberGenerator* rng = GLOBAL_RNG;
@@ -127,56 +114,100 @@ void UniformTimeTreeDistribution::buildRandomBinaryHistory(std::vector<TopologyN
 
 
 /* Clone function */
-UniformTimeTreeDistribution* UniformTimeTreeDistribution::clone( void ) const {
+UniformTimeTreeDistribution* UniformTimeTreeDistribution::clone( void ) const
+{
     
     return new UniformTimeTreeDistribution( *this );
 }
 
 
 /* Compute probability */
-double UniformTimeTreeDistribution::computeLnProbability( void ) {
+double UniformTimeTreeDistribution::computeLnProbability( void )
+{
     
     // Variable declarations and initialization
     double lnProb = 0.0;
-    double originT = originTime->getValue();
+    double age = root_age->getValue();
     
-    // we need to check as well that all ages are smaller than the origin
-    // this can simply be checked if the root age is smaller than the origin
-    if ( originT < value->getRoot().getAge() ) 
+    // we need to check that the root age matches
+    if ( age != value->getRoot().getAge() )
     {
         return RbConstants::Double::neginf;
     }
     
+    
+    // check that the ages are in correct chronological order
+    // i.e., no child is older than its parent
+    const std::vector<TopologyNode*>& nodes = value->getNodes();
+    for (std::vector<TopologyNode*>::const_iterator it = nodes.begin(); it != nodes.end(); it++)
+    {
+        
+        const TopologyNode &the_node = *(*it);
+        if ( the_node.isRoot() == false )
+        {
+            
+            if ( (the_node.getAge() - (*it)->getParent().getAge()) > 0 && the_node.isSampledAncestor() == false )
+            {
+                return RbConstants::Double::neginf;
+            }
+            else if ( (the_node.getAge() - (*it)->getParent().getAge()) > 1E-6 && the_node.isSampledAncestor() == true )
+            {
+                return RbConstants::Double::neginf;
+            }
+            
+        }
+        
+    }
+    
+    // check that the sampled ancestor nodes have a zero branch length
+    for (std::vector<TopologyNode*>::const_iterator it = nodes.begin(); it != nodes.end(); it++)
+    {
+        
+        const TopologyNode &the_node = *(*it);
+        if ( the_node.isSampledAncestor() == true )
+        {
+            
+            if ( the_node.isFossil() == false )
+            {
+                return RbConstants::Double::neginf;
+            }
+            else if ( the_node.getBranchLength() > 1E-6 )
+            {
+                return RbConstants::Double::neginf;
+            }
+            
+        }
+        
+    }
+    
     // Take the uniform draws into account
-    lnProb = (numTaxa - 2) * log( 1.0 / originT );
+    lnProb = (num_taxa - 2) * log( 1.0 / age );
 
     // Take the ordering effect into account
-    lnProb += RbMath::lnFactorial( int(numTaxa - 2) );
+    lnProb += RbMath::lnFactorial( int(num_taxa - 2) );
 
-    // We return now; apparently we are not responsible for the topology probability
     return lnProb;
 }
 
 
-void UniformTimeTreeDistribution::redrawValue( void ) {
+void UniformTimeTreeDistribution::redrawValue( void )
+{
     simulateTree();
 }
 
 
 /** Simulate the tree conditioned on the time of origin */
-void UniformTimeTreeDistribution::simulateTree( void ) {
+void UniformTimeTreeDistribution::simulateTree( void )
+{
     
     // Get the rng
     RandomNumberGenerator* rng = GLOBAL_RNG;
 
     // Create the time tree object (topology + times)
-    TimeTree *psi = new TimeTree();
-
-    // Create an empty topology
-    Topology *tau = new Topology();
+    Tree *psi = new Tree();
 
     // Root the topology by setting the appropriate flag
-    tau->setRooted( true );
+    psi->setRooted( true );
     
     // Create the root node and a vector of nodes
     TopologyNode* root = new TopologyNode();
@@ -187,7 +218,8 @@ void UniformTimeTreeDistribution::simulateTree( void ) {
     buildRandomBinaryHistory(nodes);
     
     // Set the tip names
-    for (size_t i=0; i<numTaxa; i++) {
+    for (size_t i=0; i<num_taxa; i++)
+    {
         size_t index = size_t( floor(rng->uniform01() * nodes.size()) );
         
         // Get the node from the list
@@ -196,22 +228,18 @@ void UniformTimeTreeDistribution::simulateTree( void ) {
         // Remove the randomly drawn node from the list
         nodes.erase(nodes.begin()+long(index) );
         
-        // Set name
-        std::string& name = taxonNames[i];
-        node->setName(name);
+        // Set taxon
+        node->setTaxon( taxa[i] );
     }
     
     // Initialize the topology by setting the root
-    tau->setRoot(root);
-    
-    // Connect the tree with the topology
-    psi->setTopology( tau, true );
+    psi->setRoot(root);
     
     // Now simulate the speciation times counted from originTime
     std::vector<double> intNodeTimes;
-    double              t_or = originTime->getValue();
+    double              t_or = root_age->getValue();
     intNodeTimes.push_back( 0.0 );  // For time of mrca
-    for ( size_t i=0; i<numTaxa-2; i++ )
+    for ( size_t i=0; i<num_taxa-2; i++ )
     {
         double t = rng->uniform01() * t_or;
         intNodeTimes.push_back( t );
@@ -224,9 +252,11 @@ void UniformTimeTreeDistribution::simulateTree( void ) {
     nodes.clear();
     nodes.push_back( root );
     attachTimes(psi, nodes, 0, intNodeTimes, t_or);
-    for (size_t i = 0; i < numTaxa; ++i) {
-        TopologyNode& node = tau->getTipNode(i);
-        psi->setAge( node.getIndex(), 0.0 );
+    for (size_t i = 0; i < num_taxa; ++i)
+    {
+        TopologyNode& node = psi->getTipNodeWithName(taxa[i].getName());
+        node.setIndex(i);
+        node.setAge( 0.0 );
     }
     
     // Finally store the new value
@@ -234,24 +264,65 @@ void UniformTimeTreeDistribution::simulateTree( void ) {
     
 }
 
-
-/** Get the parameters of the distribution */
-std::set<const DagNode*> UniformTimeTreeDistribution::getParameters( void ) const
+void UniformTimeTreeDistribution::getAffected(RbOrderedSet<DagNode *> &affected, RevBayesCore::DagNode *affecter)
 {
-    std::set<const DagNode*> parameters;
     
-    parameters.insert( originTime );
+    if ( affecter == root_age)
+    {
+        dag_node->getAffectedNodes( affected );
+    }
     
-    parameters.erase( NULL );
-    return parameters;
 }
 
+/**
+ * Keep the current value and reset some internal flags. Nothing to do here.
+ */
+void UniformTimeTreeDistribution::keepSpecialization(DagNode *affecter)
+{
+    
+    if ( affecter == root_age )
+    {
+        dag_node->keepAffected();
+    }
+    
+}
+
+/**
+ * Restore the current value and reset some internal flags.
+ * If the root age variable has been restored, then we need to change the root age of the tree too.
+ */
+void UniformTimeTreeDistribution::restoreSpecialization(DagNode *affecter)
+{
+    
+    if ( affecter == root_age )
+    {
+        value->getNode( value->getRoot().getIndex() ).setAge( root_age->getValue() );
+        dag_node->restoreAffected();
+    }
+    
+}
 
 /** Swap a parameter of the distribution */
-void UniformTimeTreeDistribution::swapParameter( const DagNode *oldP, const DagNode *newP )
+void UniformTimeTreeDistribution::swapParameterInternal( const DagNode *oldP, const DagNode *newP )
 {
-    if (oldP == originTime)
+    if (oldP == root_age)
     {
-        originTime = static_cast<const TypedDagNode<double>* >( newP );
+        root_age = static_cast<const TypedDagNode<double>* >( newP );
     }
+    
+}
+
+/**
+ * Touch the current value and reset some internal flags.
+ * If the root age variable has been restored, then we need to change the root age of the tree too.
+ */
+void UniformTimeTreeDistribution::touchSpecialization(DagNode *affecter, bool touchAll)
+{
+    
+    if ( affecter == root_age )
+    {
+        value->getNode( value->getRoot().getIndex() ).setAge( root_age->getValue() );
+        dag_node->touchAffected();
+    }
+    
 }

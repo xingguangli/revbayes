@@ -22,6 +22,8 @@
 
 #include "Sample.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <vector>
 
 namespace RevBayesCore {
@@ -33,19 +35,25 @@ namespace RevBayesCore {
         Sample(const valueType& v, unsigned int f=0);
     
         // overloaded operators
-        bool                operator<(const Sample &s) const;
+        bool                            operator<(const Sample &s) const;
+        bool                            operator<=(const Sample &s) const;
+        bool                            operator==(const Sample &s) const;
+        bool                            operator!=(const Sample &s) const;
     
         // getters and setters
-        void                addObservation(bool tf);
-        void                computeStatistics(void);
-        double              getEss(void) const;
-        unsigned int        getFrequency(void) const;
-        const valueType&    getValue(void) const;
-        void                setFrequency(unsigned int f);
-        void                setTrace(const std::vector<double> &t);
-        void                setValue(const valueType &v);
+        void                            addObservation(bool tf);
+        void                            computeStatistics(void);
+        double                          getEss(void) const;
+        unsigned int                    getFrequency(void) const;
+        size_t                          getSampleSize(void) const;
+        const std::vector<double>&      getTrace(void) const;
+        const valueType&                getValue(void) const;
+        void                            setFrequency(unsigned int f);
+        void                            setTrace(const std::vector<double> &t);
+        void                            setValue(const valueType &v);
     
     private:
+        
         valueType           value;
         unsigned int        frequency;
         std::vector<double> trace;
@@ -80,6 +88,30 @@ bool RevBayesCore::Sample<valueType>::operator<(const Sample &s) const
 
 
 template <class valueType>
+bool RevBayesCore::Sample<valueType>::operator<=(const Sample &s) const
+{
+    
+    return this->operator<( s ) || this->operator==( s );
+}
+
+
+template <class valueType>
+bool RevBayesCore::Sample<valueType>::operator==(const Sample &s) const
+{
+    
+    return this->frequency == s.getFrequency();
+}
+
+
+template <class valueType>
+bool RevBayesCore::Sample<valueType>::operator!=(const Sample &s) const
+{
+    
+    return this->operator==( s ) == false;
+}
+
+
+template <class valueType>
 void RevBayesCore::Sample<valueType>::addObservation( bool tf )
 {
     
@@ -109,7 +141,7 @@ void RevBayesCore::Sample<valueType>::computeStatistics( void )
 template <class valueType>
 double RevBayesCore::Sample<valueType>::getEss( void ) const
 {
-    
+    const_cast< Sample<valueType>* >(this)->computeStatistics();
     return ess;
 }
 
@@ -119,6 +151,22 @@ unsigned int RevBayesCore::Sample<valueType>::getFrequency( void ) const
 {
     
     return frequency;
+}
+
+
+template <class valueType>
+size_t RevBayesCore::Sample<valueType>::getSampleSize( void ) const
+{
+    
+    return trace.size();
+}
+
+
+template <class valueType>
+const std::vector<double>& RevBayesCore::Sample<valueType>::getTrace( void ) const
+{
+    
+    return trace;
 }
 
 

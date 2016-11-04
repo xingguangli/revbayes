@@ -34,16 +34,16 @@ UserProcedure* UserProcedure::clone(void) const
  * Arguments are added to our environment as aliases, so we can both modify them and
  * assign to them.
  */
-RevPtr<Variable> UserProcedure::execute( void )
+RevPtr<RevVariable> UserProcedure::execute( void )
 {
     // Clear signals
     Signals::getSignals().clearFlags();
     
     // Set initial return value
-    RevPtr<Variable> retVar = NULL;
+    RevPtr<RevVariable> retVar = NULL;
     
     // Create new evaluation frame with function base class execution environment as parent
-    Environment* procedureFrame = new Environment( getEnvironment() );
+    Environment* procedureFrame = new Environment( getEnvironment(), "UserProcedureEnvironment" );
     
     // Add the arguments to our environment as alias variables (modifiable and assignable)
     for (std::vector<Argument>::iterator it = args.begin(); it != args.end(); ++it)
@@ -85,9 +85,21 @@ const std::string& UserProcedure::getClassType(void)
 /** Get Rev type spec (static) */
 const TypeSpec& UserProcedure::getClassTypeSpec(void)
 {
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), &Function::getClassTypeSpec() );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), &Function::getClassTypeSpec() );
     
-	return revTypeSpec;
+	return rev_type_spec;
+}
+
+
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string UserProcedure::getFunctionName( void ) const
+{
+    // create a name variable that is NOT the same for all instance of this class
+    std::string f_name = "UserProcedure";
+    
+    return f_name;
 }
 
 

@@ -1,11 +1,3 @@
-//
-//  Func_exp.cpp
-//  RevBayesCore
-//
-//  Created by Sebastian Hoehna on 8/7/12.
-//  Copyright 2012 __MyCompanyName__. All rights reserved.
-//
-
 #include "Func_sqrt.h"
 #include "Real.h"
 #include "RealPos.h"
@@ -16,76 +8,88 @@
 using namespace RevLanguage;
 
 /** default constructor */
-Func_sqrt::Func_sqrt( void ) : Function( ) {
+Func_sqrt::Func_sqrt( void ) : TypedFunction<RealPos>( )
+{
     
 }
 
 
-/** Clone object */
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'b'.
+ *
+ * \return A new copy of the process.
+ */
 Func_sqrt* Func_sqrt::clone( void ) const {
     
     return new Func_sqrt( *this );
 }
 
 
-RevPtr<Variable> Func_sqrt::execute() {
+RevBayesCore::TypedFunction<double>* Func_sqrt::createFunction( void ) const
+{
     
     RevBayesCore::TypedDagNode<double>* arg = static_cast<const Real &>( this->args[0].getVariable()->getRevObject() ).getDagNode();
     RevBayesCore::SqrtFunction* f = new RevBayesCore::SqrtFunction( arg );
     
-    DeterministicNode<double> *detNode = new DeterministicNode<double>("", f, this->clone());
-    
-    RealPos* value = new RealPos( detNode );
-    
-    return new Variable( value );
+    return f;
 }
 
 
 /* Get argument rules */
-const ArgumentRules& Func_sqrt::getArgumentRules( void ) const {
+const ArgumentRules& Func_sqrt::getArgumentRules( void ) const
+{
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet ) {
+    if ( !rules_set )
+    {
         
-        argumentRules.push_back( new ArgumentRule( "x", RealPos::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
+        argumentRules.push_back( new ArgumentRule( "x", RealPos::getClassTypeSpec(), "A number.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
         
-        rulesSet = true;
+        rules_set = true;
     }
     
     return argumentRules;
 }
 
 
-const std::string& Func_sqrt::getClassType(void) { 
+const std::string& Func_sqrt::getClassType(void)
+{
     
     static std::string revType = "Func_sqrt";
     
 	return revType; 
 }
 
+
 /* Get class type spec describing type of object */
-const TypeSpec& Func_sqrt::getClassTypeSpec(void) { 
+const TypeSpec& Func_sqrt::getClassTypeSpec(void)
+{
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 
-/* Get return type */
-const TypeSpec& Func_sqrt::getReturnType( void ) const {
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func_sqrt::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "sqrt";
     
-    static TypeSpec returnTypeSpec = RealPos::getClassTypeSpec();
-    
-    return returnTypeSpec;
+    return f_name;
 }
 
 
-const TypeSpec& Func_sqrt::getTypeSpec( void ) const {
+const TypeSpec& Func_sqrt::getTypeSpec( void ) const
+{
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }

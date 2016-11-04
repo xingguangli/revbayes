@@ -48,11 +48,8 @@ SyntaxDivisionAssignment* SyntaxDivisionAssignment::clone () const
  * Evaluate the content of this syntax element. This will perform a
  * division assignment operation.
  */
-void SyntaxDivisionAssignment::assign(RevPtr<Variable> &lhs, RevPtr<Variable> &rhs)
+void SyntaxDivisionAssignment::assign(RevPtr<RevVariable> &lhs, RevPtr<RevVariable> &rhs)
 {
-#ifdef DEBUG_PARSER
-    printf( "Evaluating division assignment\n" );
-#endif
     
     // Get variable from lhs. We use standard evaluation because the variable is
     // implicitly on both sides (lhs and rhs) of this type of statement
@@ -85,8 +82,8 @@ void SyntaxDivisionAssignment::assign(RevPtr<Variable> &lhs, RevPtr<Variable> &r
     // Generate result of the multiplication
     RevObject *newValue = lhs_value.divide( rhs_value );
     
-    // Fill the slot with the new variable
-    lhs->setRevObject( newValue );
+    // Fill the slot with the new RevVariable
+    lhs->replaceRevObject( newValue );
     
     // Reset it as control variable, if it was a control variable before the assignment.
     // When we fill the slot, the control variable property is reset to false by default.
@@ -95,9 +92,6 @@ void SyntaxDivisionAssignment::assign(RevPtr<Variable> &lhs, RevPtr<Variable> &r
         lhs->setWorkspaceVariableState( true );
     }
     
-#ifdef DEBUG_PARSER
-    env.printValue(std::cerr);
-#endif
 }
 
 

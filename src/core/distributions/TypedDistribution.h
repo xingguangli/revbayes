@@ -33,81 +33,85 @@
 
 #include "Distribution.h"
 #include "Function.h"
-#include "UnivariateFunction.h"
 
 #include <iostream>
 
 namespace RevBayesCore {
     
-    template <class valueType>
+    template <class variableType>
     class StochasticNode;
     
-    template<class valueType>
+    template<class variableType>
     class TypedDistribution : public Distribution {
         
     public:
         // constructors and destructor
         virtual                        ~TypedDistribution(void);
         
+//        typedef variableType            rbValueType;
+
+        
         // public methods
-        valueType&                      getValue(void);                                                     //!< Get the current value (non-const)
-        const valueType&                getValue(void) const;                                               //!< Get the current value
-        StochasticNode<valueType>*      getStochasticNode(void);                                            //!< Get the stochastic node holding this distribution
-        void                            setStochasticNode(StochasticNode<valueType> *n);                    //!< Set the stochastic node holding this distribution
+        variableType&                   getValue(void);                                                             //!< Get the current value (non-const)
+        const variableType&             getValue(void) const;                                                       //!< Get the current value
+        StochasticNode<variableType>*   getStochasticNode(void);                                                    //!< Get the stochastic node holding this distribution
+        virtual void                    setStochasticNode(StochasticNode<variableType> *n);                            //!< Set the stochastic node holding this distribution
         
         // virtual methods
-        virtual void                    setValue(valueType *v);                                             //!< Set the current value, e.g. attach an observation (clamp)
-        virtual void                    setValue(const valueType &v);                                       //!< Set the current value, e.g. attach an observation (clamp)
+        virtual void                    setValue(variableType *v, bool f=false);                                       //!< Set the current value, e.g. attach an observation (clamp)
         
         // pure virtual public methods
-        virtual TypedDistribution*      clone(void) const = 0;                                              //!< Clone the distribution
-        virtual double                  computeLnProbability(void) = 0;                                     //!< Clone the ln probability density
-        virtual void                    redrawValue(void) = 0;                                              //!< Draw a new random value from the distribution
-        virtual void                    swapParameter(const DagNode *oldP, const DagNode *newP) = 0;        //!< Exchange the parameter
+        virtual TypedDistribution*      clone(void) const = 0;                                                      //!< Clone the distribution
+        virtual double                  computeLnProbability(void) = 0;                                             //!< Clone the ln probability density
+        virtual void                    redrawValue(void) = 0;                                                      //!< Draw a new random value from the distribution
         
     protected:
-        TypedDistribution(valueType *v);
+        TypedDistribution(variableType *v);
         TypedDistribution(const TypedDistribution &d);
         
         // overloaded operators
         TypedDistribution&              operator=(const TypedDistribution &d); 
+
+        virtual void                    swapParameterInternal(const DagNode *oldP, const DagNode *newP) = 0;        //!< Exchange the parameter
+
         
         // inheritable attributes
-        StochasticNode<valueType>*      dagNode;                                                            //!< The stochastic node holding this distribution. This is needed for delegated calls to the DAG, such as getAffected(), ...
-        valueType*                      value;
+        StochasticNode<variableType>*   dag_node;                                                                    //!< The stochastic node holding this distribution. This is needed for delegated calls to the DAG, such as getAffected(), ...
+        variableType*                   value;
         
     };
     
     // Global functions using the class
-    template <class valueType>
-    std::ostream&               operator<<(std::ostream& o, const TypedDistribution<valueType>& x);                                //!< Overloaded output operator
+    template <class variableType>
+    std::ostream&               operator<<(std::ostream& o, const TypedDistribution<variableType>& x);                                //!< Overloaded output operator
     
 }
 
 
-#include "Cloneable.h"
+#include "Cloner.h"
 #include "Cloneable.h"
 #include "IsDerivedFrom.h"
 
 
-template <class valueType>
-RevBayesCore::TypedDistribution<valueType>::TypedDistribution(valueType *v) : Distribution(), 
-    dagNode( NULL ), 
+template <class variableType>
+RevBayesCore::TypedDistribution<variableType>::TypedDistribution(variableType *v) : Distribution(), 
+    dag_node( NULL ),
     value( v ) 
 {
     
 }
 
-template <class valueType>
-RevBayesCore::TypedDistribution<valueType>::TypedDistribution(const TypedDistribution &d) : Distribution(d), 
-    dagNode( NULL ), 
-    value( Cloner<valueType, IsDerivedFrom<valueType, Cloneable>::Is >::createClone( *d.value ) ) 
+template <class variableType>
+RevBayesCore::TypedDistribution<variableType>::TypedDistribution(const TypedDistribution &d) : Distribution(d), 
+    dag_node( NULL ),
+    value( Cloner<variableType, IsDerivedFrom<variableType, Cloneable>::Is >::createClone( *d.value ) )
 {
     
 }
 
-template <class valueType>
-RevBayesCore::TypedDistribution<valueType>::~TypedDistribution( void ) {
+template <class variableType>
+RevBayesCore::TypedDistribution<variableType>::~TypedDistribution( void )
+{
     
     delete value;
     
@@ -115,8 +119,9 @@ RevBayesCore::TypedDistribution<valueType>::~TypedDistribution( void ) {
 
 
 
-template <class valueType>
-RevBayesCore::TypedDistribution<valueType>& RevBayesCore::TypedDistribution<valueType>::operator=(const TypedDistribution &d) {
+template <class variableType>
+RevBayesCore::TypedDistribution<variableType>& RevBayesCore::TypedDistribution<variableType>::operator=(const TypedDistribution &d)
+{
     
     if ( this != &d ) 
     {
@@ -125,62 +130,60 @@ RevBayesCore::TypedDistribution<valueType>& RevBayesCore::TypedDistribution<valu
         
         // make my own copy of the value (we rely on proper implementation of assignment operators)
         delete value;
-        value = Cloner<valueType, IsDerivedFrom<valueType, Cloneable>::Is >::createClone( *d.value );
+        value = Cloner<variableType, IsDerivedFrom<variableType, Cloneable>::Is >::createClone( *d.value );
     }
     
     return *this;
 }
 
 
-template <class valueType>
-valueType& RevBayesCore::TypedDistribution<valueType>::getValue(void) {
+template <class variableType>
+variableType& RevBayesCore::TypedDistribution<variableType>::getValue(void)
+{
     
     return *value;
 }
 
-template <class valueType>
-const valueType& RevBayesCore::TypedDistribution<valueType>::getValue(void) const {
+template <class variableType>
+const variableType& RevBayesCore::TypedDistribution<variableType>::getValue(void) const
+{
     
     return *value;
 }
 
 
-template <class valueType>
-RevBayesCore::StochasticNode<valueType>* RevBayesCore::TypedDistribution<valueType>::getStochasticNode( void ) {
+template <class variableType>
+RevBayesCore::StochasticNode<variableType>* RevBayesCore::TypedDistribution<variableType>::getStochasticNode( void )
+{
     
-    return dagNode;
+    return dag_node;
 }
 
-template <class valueType>
-void RevBayesCore::TypedDistribution<valueType>::setStochasticNode( StochasticNode<valueType> *n ) {
+template <class variableType>
+void RevBayesCore::TypedDistribution<variableType>::setStochasticNode( StochasticNode<variableType> *n )
+{
     
-    dagNode = n;
+    dag_node = n;
 }
 
-template <class valueType>
-void RevBayesCore::TypedDistribution<valueType>::setValue( valueType *v ) {
+template <class variableType>
+void RevBayesCore::TypedDistribution<variableType>::setValue( variableType *v, bool force )
+{
     
     // free memory
     if (value != v)
+    {
         delete value;
+    }
     
     value = v;
     
 }
 
-template <class valueType>
-void RevBayesCore::TypedDistribution<valueType>::setValue( const valueType &v ) {
-    
-    // free memory
-    delete value;
-    
-    value = Cloner<valueType, IsDerivedFrom<valueType, Cloneable>::Is >::createClone( v );
-    
-}
 
-
-template <class valueType>
-std::ostream& RevBayesCore::operator<<(std::ostream& o, const TypedDistribution<valueType>& f) {
+template <class variableType>
+std::ostream& RevBayesCore::operator<<(std::ostream& o, const TypedDistribution<variableType>& f)
+{
     
     o << "Distribution()";
     

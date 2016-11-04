@@ -1,25 +1,10 @@
-/**
- * @file
- * This file contains the implementation of some of the functions
- * in the abstract base class for language objects, RevObject.
- *
- * @brief Partial implementation of RevObject
- *
- * (c) Copyright 2009- under GPL version 3
- * @date Last modified: $Date$
- * @author The RevBayes Development Core Team
- * @license GPL version 3
- * @version 1.0
- * @since 2009-09-02, version 1.0
- * @extends RevObject
- *
- * $Id$
- */
-
+#include "ArgumentRules.h"
 #include "MemberProcedure.h"
 #include "MethodTable.h"
 #include "ModelVector.h"
+#include "OptionRule.h"
 #include "RbException.h"
+#include "RbHelpType.h"
 #include "RbUtil.h"
 #include "RevObject.h"
 #include "RlUtils.h"
@@ -30,6 +15,23 @@
 #include <stdio.h>
 
 using namespace RevLanguage;
+
+
+/**
+ * Default constructor.
+ */
+RevObject::RevObject( bool includeMemberMethods ) : RevMemberObject()
+{
+    
+    if ( includeMemberMethods == true )
+    {
+        ArgumentRules* getMethodsArgRules = new ArgumentRules();
+    
+        // Add the 'methods()' method
+        methods.addFunction( new MemberProcedure( "methods", RlUtils::Void, getMethodsArgRules) );
+    }
+    
+}
 
 
 /** 
@@ -58,22 +60,23 @@ RevObject* RevObject::add(const RevObject &rhs) const
 }
 
 
-/** Clone the model DAG connected to this object. */
-RevObject* RevObject::cloneDAG( std::map<const RevBayesCore::DagNode*, RevBayesCore::DagNode*>& nodesMap ) const
+void RevObject::addMethods(const MethodTable &mt)
 {
-    throw RbException( "Rev object with no DAG node should not be included in model DAG" );
+    methods.insertInheritedMethods( mt );
 }
 
 
 /** The default implementation does nothing because we don't have an internal object */
-void RevObject::constructInternalObject( void ) {
+void RevObject::constructInternalObject( void )
+{
     // nothing to do
 }
 
 
 
 /** Convert to type and dim. The caller manages the returned object. */
-RevObject* RevObject::convertTo(const TypeSpec& typeSpec) const {
+RevObject* RevObject::convertTo(const TypeSpec& typeSpec) const
+{
         
     throw RbException("Failed conversion from type '" + getType() + "' to type '" + typeSpec.getType() + "'" );
     
@@ -111,20 +114,23 @@ RevObject* RevObject::divide(const RevObject &rhs) const
 /** 
  * Execute simple method. 
  */
-RevPtr<Variable> RevObject::executeMethod(std::string const &name, const std::vector<Argument> &args) {
+RevPtr<RevVariable> RevObject::executeMethod(std::string const &name, const std::vector<Argument> &args, bool &found)
+{
     
-     if ( name == "methods" )
+    if ( name == "methods" )
     {
+        found = true;
+        
         // just print the method names (including inherited methods)
         const MethodTable &m = getMethods();
         m.printValue(std::cout, true);
         
         return NULL;
     }
-    else 
-    {
-        throw RbException( "No mapping from member method '" + name + "' to internal function call provided" );
-    }
+    
+    found = false;
+    
+    return NULL;
 }
 
 
@@ -144,9 +150,9 @@ const std::string& RevObject::getClassType(void)
 const TypeSpec& RevObject::getClassTypeSpec(void)
 {
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), NULL );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), NULL );
 	
-    return revTypeSpec; 
+    return rev_type_spec; 
 }
 
 
@@ -162,18 +168,10 @@ const MemberRules& RevObject::getParameterRules(void) const
 
 
 /**
- * Get common member methods. Here we
+ * Get common member methods.
  */
 const MethodTable& RevObject::getMethods( void ) const
 {
-    
-    // initialize the methods if it hasn't happened yet
-    if ( methodsInitialized == false )
-    {
-        initializeMethods();
-        
-        methodsInitialized = true;
-    }
     
     return methods;
 }
@@ -195,9 +193,291 @@ const std::string& RevObject::getType( void ) const
 RevBayesCore::DagNode* RevObject::getDagNode( void ) const
 {
     
-    throw RbException("RevLanguage only objects cannot be used inside DAG's! You tried to access the DAG node of type '" + getClassType() + "'.");
+    throw RbException("Workspace objects cannot be used inside DAG's! You tried to access the DAG node of type '" + getClassType() + "'.");
     
     return NULL;
+}
+
+
+RevBayesCore::RbHelpEntry* RevObject::constructTypeSpecificHelp( void ) const
+{
+    
+    return new RevBayesCore::RbHelpType();
+}
+
+
+void RevObject::addSpecificHelpFields(RevBayesCore::RbHelpEntry *e) const
+{
+    
+    RevBayesCore::RbHelpType *helpEntry = static_cast<RevBayesCore::RbHelpType*>( e );
+    
+    // create the constructor
+    RevBayesCore::RbHelpFunction help_constructor = RevBayesCore::RbHelpFunction();
+    
+    // usage
+    help_constructor.setUsage( getConstructorUsage() );
+    
+    // arguments
+    const MemberRules& rules = getParameterRules();
+    std::vector<RevBayesCore::RbHelpArgument> arguments = std::vector<RevBayesCore::RbHelpArgument>();
+    
+    for ( size_t i=0; i<rules.size(); ++i )
+    {
+        const ArgumentRule &the_rule = rules[i];
+        
+        RevBayesCore::RbHelpArgument argument = RevBayesCore::RbHelpArgument();
+        
+        argument.setLabel( the_rule.getArgumentLabel() );
+        argument.setDescription( the_rule.getArgumentDescription() );
+        
+        std::string type = "<any>";
+        if ( the_rule.getArgumentDagNodeType() == ArgumentRule::CONSTANT )
+        {
+            type = "<constant>";
+        }
+        else if ( the_rule.getArgumentDagNodeType() == ArgumentRule::STOCHASTIC )
+        {
+            type = "<stochastic>";
+        }
+        else if ( the_rule.getArgumentDagNodeType() == ArgumentRule::DETERMINISTIC )
+        {
+            type = "<deterministic>";
+        }
+        argument.setArgumentDagNodeType( type );
+        
+        std::string passing_method = "pass by value";
+        if ( the_rule.getEvaluationType() == ArgumentRule::BY_CONSTANT_REFERENCE )
+        {
+            passing_method = "pass by const reference";
+        }
+        else if ( the_rule.getEvaluationType() == ArgumentRule::BY_REFERENCE )
+        {
+            passing_method = "pass by reference";
+        }
+        argument.setArgumentPassingMethod(  passing_method );
+        
+        argument.setValueType( the_rule.getArgumentTypeSpec()[0].getType() );
+        
+        if ( the_rule.hasDefault() )
+        {
+            std::stringstream ss;
+            the_rule.getDefaultVariable().getRevObject().printValue( ss, true);
+            argument.setDefaultValue( ss.str() );
+        }
+        else
+        {
+            argument.setDefaultValue( "" );
+        }
+        
+        // loop options
+        std::vector<std::string> options = std::vector<std::string>();
+        const OptionRule *opt_rule = dynamic_cast<const OptionRule*>( &the_rule );
+        if ( opt_rule != NULL )
+        {
+            options = opt_rule->getOptions();
+        }
+        argument.setOptions( options );
+        
+        // add the argument to the argument list
+        arguments.push_back( argument );
+    }
+    
+    help_constructor.setArguments( arguments );
+    
+    // details
+    help_constructor.setDetails( getConstructorDetails() );
+    
+    // example
+    help_constructor.setExample( getConstructorExample() );
+    
+    //
+    std::vector<RevBayesCore::RbHelpFunction> constructors;
+    constructors.push_back( help_constructor );
+    helpEntry->setConstructors( constructors );
+    
+    
+    helpEntry->setMethods( getHelpMethods() );
+
+}
+
+
+
+
+/**
+ * Get usage information for help system
+ */
+std::string RevObject::getConstructorUsage( void ) const
+{
+    
+    std::ostringstream o;
+    
+    if ( getConstructorFunctionName() == "" )
+    {
+        o << "<unnamed>(";
+    }
+    else
+    {
+        o << "" << getConstructorFunctionName() << "(";
+    }
+    
+    const ArgumentRules& argRules = getParameterRules();
+    for (size_t i=0; i<argRules.size(); ++i)
+    {
+        if (i != 0)
+        {
+            o << ", ";
+        }
+        argRules[i].printValue(o);
+    }
+    o << ")";
+    
+    return o.str();
+}
+
+
+/**
+ * Get the help entry for this class
+ */
+RevBayesCore::RbHelpEntry* RevObject::getHelpEntry( void ) const
+{
+    // create the help function entry that we will fill with some values
+    RevBayesCore::RbHelpEntry *help = constructTypeSpecificHelp();
+    RevBayesCore::RbHelpEntry &helpEntry = *help;
+    
+    // name
+    helpEntry.setName( getConstructorFunctionName() );
+    
+    // aliases
+    std::vector<std::string> aliases = getConstructorFunctionAliases();
+    helpEntry.setAliases( aliases );
+    
+    // title
+    helpEntry.setTitle( getHelpTitle() );
+    
+    // description
+    helpEntry.setDescription( getHelpDescription() );
+    
+    helpEntry.setReferences( getHelpReferences() );
+    
+    // author
+    helpEntry.setAuthor( getHelpAuthor() );
+    
+    // see also
+    helpEntry.setSeeAlso( getHelpSeeAlso() );
+    
+    // now add the specific help stuff
+    addSpecificHelpFields( help );
+    
+    return help;
+    
+}
+
+
+/** Get the help entry for this class */
+std::vector<RevBayesCore::RbHelpFunction> RevObject::getHelpMethods( void ) const
+{
+    
+    // construct the vector
+    std::vector<RevBayesCore::RbHelpFunction> help_methods;
+    
+    const MethodTable &methods = getMethods();
+    
+    for (std::multimap<std::string, Function*>::const_iterator it = methods.begin(); it != methods.end(); ++it)
+    {
+        
+        Function &the_function = *it->second;
+        
+        // create the method
+        RevBayesCore::RbHelpFunction help_method = RevBayesCore::RbHelpFunction();
+        
+        // name
+        help_method.setName( it->first );
+        
+        // usage
+        help_method.setUsage( the_function.getHelpUsage() );
+        
+        // arguments
+        const ArgumentRules& rules = the_function.getArgumentRules();
+        std::vector<RevBayesCore::RbHelpArgument> arguments = std::vector<RevBayesCore::RbHelpArgument>();
+        
+        for ( size_t i=0; i<rules.size(); ++i )
+        {
+            const ArgumentRule &the_rule = rules[i];
+            
+            RevBayesCore::RbHelpArgument argument = RevBayesCore::RbHelpArgument();
+            
+            argument.setLabel( the_rule.getArgumentLabel() );
+            argument.setDescription( the_rule.getArgumentDescription() );
+            
+            std::string type = "<any>";
+            if ( the_rule.getArgumentDagNodeType() == ArgumentRule::CONSTANT )
+            {
+                type = "<constant>";
+            }
+            else if ( the_rule.getArgumentDagNodeType() == ArgumentRule::STOCHASTIC )
+            {
+                type = "<stochastic>";
+            }
+            else if ( the_rule.getArgumentDagNodeType() == ArgumentRule::DETERMINISTIC )
+            {
+                type = "<deterministic>";
+            }
+            argument.setArgumentDagNodeType( type );
+            
+            std::string passing_method = "value";
+            if ( the_rule.getEvaluationType() == ArgumentRule::BY_CONSTANT_REFERENCE )
+            {
+                passing_method = "const reference";
+            }
+            else if ( the_rule.getEvaluationType() == ArgumentRule::BY_REFERENCE )
+            {
+                passing_method = "reference";
+            }
+            argument.setArgumentPassingMethod(  passing_method );
+            
+            argument.setValueType( the_rule.getArgumentTypeSpec()[0].getType() );
+            
+            if ( the_rule.hasDefault() )
+            {
+                std::stringstream ss;
+                the_rule.getDefaultVariable().getRevObject().printValue( ss, true);
+                argument.setDefaultValue( ss.str() );
+            }
+            else
+            {
+                argument.setDefaultValue( "" );
+            }
+            
+            // loop options
+            std::vector<std::string> options = std::vector<std::string>();
+            const OptionRule *opt_rule = dynamic_cast<const OptionRule*>( &the_rule );
+            if ( opt_rule != NULL )
+            {
+                options = opt_rule->getOptions();
+            }
+            argument.setOptions( options );
+            
+            // add the argument to the argument list
+            arguments.push_back( argument );
+        }
+        
+        help_method.setArguments( arguments );
+        
+        // return value
+        help_method.setReturnType( the_function.getReturnType().getType() );
+        
+//        // details
+//        help_method.setDetails( the_function.getHelpDetails() );
+//        
+//        // example
+//        help_method.setExample( the_function.getHelpExample() );
+        
+        //
+        help_methods.push_back( help_method );
+        
+    }
+    
+    return help_methods;
 }
 
 
@@ -246,16 +526,19 @@ bool RevObject::isConstant( void ) const
 }
 
 
-/** Is convertible to type? */
-bool RevObject::isConvertibleTo(const TypeSpec& type, bool once) const
+/** 
+ * Is convertible to type? 
+ * -1 represent false and any positive number the cost of conversion.
+ */
+double RevObject::isConvertibleTo(const TypeSpec& type, bool once) const
 {
     
-    return false;
+    return -1.0;
 }
 
 
 /* Are we of specified language type? */
-bool RevObject::isTypeSpec(const TypeSpec& typeSpec) const
+bool RevObject::isType(const TypeSpec& typeSpec) const
 {
     
     return getTypeSpec().isDerivedOf( typeSpec );
@@ -285,17 +568,6 @@ void RevObject::makeConstantValue( void )
 
 
 /**
- * Convert a model object to a conversion object, the value of which is determined by a type
- * conversion from a specified variable. By default we throw an error, since we do not have
- * a DAG node and cannot perform the requested action.
- */
-void RevObject::makeConversionValue( RevPtr<Variable> var )
-{
-    throw RbException( "Object without DAG node cannot be made a conversion value" );
-}
-
-
-/**
  * Make a new object that is an indirect deterministic reference to the object.
  * The default implementation throws an error.
  */
@@ -303,23 +575,7 @@ RevObject* RevObject::makeIndirectReference(void)
 {
     std::ostringstream msg;
     msg << "The type '" << getClassType() << "' not supported in indirect reference assignments (yet)";
-    throw RbException( msg );
-}
-
-
-/**
- * Make methods common to all member objects.
- * We support one method:
- * 1) methods()
- */
-void RevObject::initializeMethods(void) const
-{
-    
-    ArgumentRules* getMethodsArgRules = new ArgumentRules();
-    
-    // Add the 'methods()' method
-    methods.addFunction("methods", new MemberProcedure(RlUtils::Void, getMethodsArgRules) );
-        
+    throw RbException(msg.str());
 }
 
 
@@ -330,7 +586,7 @@ void RevObject::makeUserFunctionValue( UserFunction* fxn )
 {
     std::ostringstream msg;
     msg << "The type '" << getClassType() << "' not supported in user-defined function nodes (yet)";
-    throw RbException( msg );
+    throw RbException( msg.str() );
 }
 
 
@@ -350,32 +606,23 @@ RevObject* RevObject::multiply(const RevObject &rhs) const
 }
 
 
-/**
- * Replace the variable. This default implementation does nothing.
- */
-void RevObject::replaceVariable(RevObject *newVar)
-{
-    
-}
-
-
 /** Set a member variable */
-void RevObject::setConstParameter(const std::string& name, const RevPtr<const Variable> &var)
+void RevObject::setConstParameter(const std::string& name, const RevPtr<const RevVariable> &var)
 {
     
-    throw RbException("No constant member with name \"" + name + "\" found to set.");
+    throw RbException("No parameter with name \"" + name + "\" found to set.");
 }
 
 
 /* Set a member variable.
  * In this default implementation, we delegate to setConstParameter.
- * Derived classes of MemberObject who need non-const variable should overwrite this function.
+ * Derived classes of MemberObject who need non-const RevVariable should overwrite this function.
  * If you don't care if the variable is const, then you should only overwrite the setConstParameter.
  */
-void RevObject::setParameter(const std::string& name, const RevPtr<Variable> &var)
+void RevObject::setParameter(const std::string& name, const RevPtr<RevVariable> &var)
 {
     
-    setConstParameter(name, RevPtr<const Variable>( var ) );
+    setConstParameter(name, RevPtr<const RevVariable>( var ) );
     
 }
 
@@ -414,22 +661,24 @@ RevObject* RevObject::subtract(const RevObject &rhs) const
 std::string RevObject::toString( void ) const
 {
     std::stringstream o;
-    printValue(o);
+    printValue(o,true);
     
     return o.str();
 }
 
 /** Make sure we can print the value of the object easily */
-std::ostream& operator<<(std::ostream& o, const RevObject& x) {
+std::ostream& operator<<(std::ostream& o, const RevObject& x)
+{
     
-    x.printValue(o);
+    x.printValue(o,true);
     return o;
 }
 
 /** Make sure we can print the value of the object easily */
-std::ostream& RevLanguage::operator<<(std::ostream& o, const RevObject& x) {
+std::ostream& RevLanguage::operator<<(std::ostream& o, const RevObject& x)
+{
     
-    x.printValue(o);
+    x.printValue(o,true);
     return o;
 }
 

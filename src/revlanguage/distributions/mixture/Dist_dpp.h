@@ -34,12 +34,13 @@ namespace RevLanguage {
         virtual ~Dist_dpp();
         
         // Basic utility functions
-        Dist_dpp*                                       clone(void) const;                                                              //!< Clone the object
-        static const std::string&                       getClassType(void);                                                             //!< Get Rev type
-        static const TypeSpec&                          getClassTypeSpec(void);                                                         //!< Get class type spec
-        const TypeSpec&                                 getTypeSpec(void) const;                                                        //!< Get the type spec of the instance
-        const MemberRules&                              getParameterRules(void) const;                                                     //!< Get member rules (const)
-//        void                                            printValue(std::ostream& o) const;                                              //!< Print the general information on the function ('usage')
+        Dist_dpp*                                       clone(void) const;                                                                      //!< Clone the object
+        static const std::string&                       getClassType(void);                                                                     //!< Get Rev type
+        static const TypeSpec&                          getClassTypeSpec(void);                                                                 //!< Get class type spec
+        std::string                                     getDistributionFunctionName(void) const;                                                //!< Get the Rev-name for this distribution.
+        const TypeSpec&                                 getTypeSpec(void) const;                                                                //!< Get the type spec of the instance
+        const MemberRules&                              getParameterRules(void) const;                                                          //!< Get member rules (const)
+//        void                                            printValue(std::ostream& o) const;                                                    //!< Print the general information on the function ('usage')
         
         
         // Distribution functions you have to override
@@ -47,13 +48,13 @@ namespace RevLanguage {
         
     protected:
         
-        void                                            setConstParameter(const std::string& name, const RevPtr<const Variable> &var);     //!< Set member variable
+        void                                            setConstParameter(const std::string& name, const RevPtr<const RevVariable> &var);       //!< Set member variable
         
         
     private:
-        RevPtr<const Variable>                          concentration;
-        RevPtr<const Variable>                          baseDistribution;
-        RevPtr<const Variable>                          numElements;
+        RevPtr<const RevVariable>                       concentration;
+        RevPtr<const RevVariable>                       baseDistribution;
+        RevPtr<const RevVariable>                       numElements;
         
     };
     
@@ -126,12 +127,27 @@ template <typename valType>
 const RevLanguage::TypeSpec& RevLanguage::Dist_dpp<valType>::getClassTypeSpec(void)
 {
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( TypedDistribution< ModelVector< valType > >::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( TypedDistribution< ModelVector< valType > >::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 
+/**
+ * Get the Rev name for the distribution.
+ * This name is used for the constructor and the distribution functions,
+ * such as the density and random value function
+ *
+ * \return Rev name of constructor function.
+ */
+template <typename valType>
+std::string RevLanguage::Dist_dpp<valType>::getDistributionFunctionName( void ) const
+{
+    // create a distribution name variable that is the same for all instance of this class
+    std::string d_name = "DPP";
+    
+    return d_name;
+}
 
 
 /** Return member rules (no members) */
@@ -140,16 +156,16 @@ const RevLanguage::MemberRules& RevLanguage::Dist_dpp<valType>::getParameterRule
 {
     
     static MemberRules distDPPMemberRules;
-    static bool rulesSet = false;
+    static bool rules_set = false;
 
-    if ( !rulesSet )
+    if ( !rules_set )
     {
     
-        distDPPMemberRules.push_back( new ArgumentRule( "concentration"   , RealPos::getClassTypeSpec()                   , ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        distDPPMemberRules.push_back( new ArgumentRule( "baseDistribution", TypedDistribution<valType>::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        distDPPMemberRules.push_back( new ArgumentRule( "numElements"     , Natural::getClassTypeSpec()                   , ArgumentRule::BY_VALUE ) );
+        distDPPMemberRules.push_back( new ArgumentRule( "concentration"   , RealPos::getClassTypeSpec()                   , "The concentration parameter.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        distDPPMemberRules.push_back( new ArgumentRule( "baseDistribution", TypedDistribution<valType>::getClassTypeSpec(), "The base distribution for the per category values.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        distDPPMemberRules.push_back( new ArgumentRule( "numElements"     , Natural::getClassTypeSpec()                   , "The number of elements drawn from this distribution.", ArgumentRule::BY_VALUE, ArgumentRule::ANY ) );
         
-        rulesSet = true;
+        rules_set = true;
     }
     
     return distDPPMemberRules;
@@ -169,7 +185,7 @@ const RevLanguage::TypeSpec& RevLanguage::Dist_dpp<valType>::getTypeSpec( void )
 
 /** Set a member variable */
 template <typename valType>
-void RevLanguage::Dist_dpp<valType>::setConstParameter(const std::string& name, const RevPtr<const Variable> &var)
+void RevLanguage::Dist_dpp<valType>::setConstParameter(const std::string& name, const RevPtr<const RevVariable> &var)
 {
     
     if ( name == "concentration" )

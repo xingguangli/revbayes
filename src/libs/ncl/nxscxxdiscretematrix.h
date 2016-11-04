@@ -109,7 +109,7 @@ class NxsCXXDiscreteMatrix
 			return nativeCMatrix.matrix;
 			}
 
-		const int getDatatype() const
+		const int getDataType() const
 			{
 			return (int)nativeCMatrix.datatype;
 			}
@@ -257,7 +257,7 @@ void NxsConsumePatternSetToPatternVector(
 void NxsTransposeCompressedMatrix(
   const std::vector<NxsCharacterPattern> & compressedTransposedMatrix,
   ScopedTwoDMatrix<NxsCDiscreteStateSet> & destination,
-  std::vector<unsigned> * patternCounts = 0L,
+  std::vector<unsigned> * pattern_counts = 0L,
   std::vector<double> * patternWeights = 0L);
 
 

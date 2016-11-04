@@ -1,17 +1,10 @@
-//
-//  TreeCharacterHistoryNodeMonitor.h
-//  rb_mlandis
-//
-//  Created by Michael Landis on 5/5/14.
-//  Copyright (c) 2014 Michael Landis. All rights reserved.
-//
-
-#ifndef __rb_mlandis__TreeCharacterHistoryNodeMonitor__
-#define __rb_mlandis__TreeCharacterHistoryNodeMonitor__
+#ifndef TreeCharacterHistoryNodeMonitor_H
+#define TreeCharacterHistoryNodeMonitor_H
 
 
 #include "AbstractCharacterData.h"
 #include "AbstractTreeHistoryCtmc.h"
+#include "BiogeographicCladoEvent.h"
 #include "BiogeographicTreeHistoryCtmc.h"
 #include "DagNode.h"
 #include "Model.h"
@@ -31,12 +24,12 @@
 
 namespace RevBayesCore {
     
-    template<class charType, class treeType>
+    template<class charType>
     class TreeCharacterHistoryNodeMonitor : public Monitor {
         
     public:
         // Constructors and Destructors
-        TreeCharacterHistoryNodeMonitor(StochasticNode<AbstractDiscreteCharacterData>* s, TypedDagNode<treeType> *t, unsigned long g, const std::string &fname, const std::string &del, bool pp=true, bool l=true, bool pr=true, bool ap=false, bool sm=true, bool sne=false, bool ste=true);
+        TreeCharacterHistoryNodeMonitor(StochasticNode<AbstractHomologousDiscreteCharacterData>* s, TypedDagNode<Tree> *t, unsigned long g, const std::string &fname, const std::string &del, bool pp=true, bool l=true, bool pr=true, bool ap=false, bool sm=true, bool sne=false, bool ste=true);
         
         // new TreeCharacterHistoryNodeMonitor( tau, bh_vector_stochastic, 10, filepath + "rb.tree_chars.txt", "\t"));
         
@@ -68,8 +61,8 @@ namespace RevBayesCore {
         std::fstream                        outStream;
         
         // parameters
-        StochasticNode<AbstractDiscreteCharacterData>* variable;
-        TypedDagNode<treeType>*             tree;
+        StochasticNode<AbstractHomologousDiscreteCharacterData>* variable;
+        TypedDagNode<Tree>*                 tree;
         std::set<DagNode *>                 nodeVariables;
         std::string                         filename;
         std::string                         separator;
@@ -80,16 +73,16 @@ namespace RevBayesCore {
         bool                                showMetadata;
         bool                                showNumEvents;
         bool                                showTreeEvents;
-        size_t                              numStates;
+        size_t                              num_states;
         
     };
     
 }
 
 /* Constructor */
-template<class charType, class treeType>
-RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::TreeCharacterHistoryNodeMonitor(StochasticNode<AbstractDiscreteCharacterData>* s, TypedDagNode<treeType>* t, unsigned long g, const std::string &fname, const std::string &del, bool pp, bool l, bool pr, bool ap, bool sm, bool sne, bool ste) :
-Monitor(g,s),
+template<class charType>
+RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::TreeCharacterHistoryNodeMonitor(StochasticNode<AbstractHomologousDiscreteCharacterData>* s, TypedDagNode<Tree>* t, unsigned long g, const std::string &fname, const std::string &del, bool pp, bool l, bool pr, bool ap, bool sm, bool sne, bool ste) :
+Monitor(g,t),
 outStream(),
 variable(s),
 tree( t ),
@@ -102,16 +95,17 @@ append(ap),
 showMetadata(sm),
 showNumEvents(sne),
 showTreeEvents(ste),
-numStates(0)
+num_states(0)
 {
     nodes.push_back(s);
-    nodes.push_back(t);
+//    nodes.push_back(t);
+    s->incrementReferenceCount();
     
-    numStates = static_cast<const DiscreteCharacterState&>(s->getValue().getCharacter(0,0)).getNumberOfStates();
+    num_states = static_cast<const DiscreteCharacterState&>(s->getValue().getCharacter(0,0)).getNumberOfStates();
 }
 
-template<class charType, class treeType>
-RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::TreeCharacterHistoryNodeMonitor(const TreeCharacterHistoryNodeMonitor &m) :
+template<class charType>
+RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::TreeCharacterHistoryNodeMonitor(const TreeCharacterHistoryNodeMonitor &m) :
 Monitor( m ),
 outStream( ),
 variable(m.variable),
@@ -120,7 +114,7 @@ nodeVariables( m.nodeVariables ),
 showMetadata(m.showMetadata),
 showNumEvents(m.showNumEvents),
 showTreeEvents(m.showTreeEvents),
-numStates(m.numStates)
+num_states(m.num_states)
 {    
     filename    = m.filename;
     separator   = m.separator;
@@ -132,29 +126,29 @@ numStates(m.numStates)
 
 
 /* Clone the object */
-template<class charType, class treeType>
-RevBayesCore::TreeCharacterHistoryNodeMonitor<charType,treeType>* RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::clone(void) const {
+template<class charType>
+RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>* RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::clone(void) const {
     
-    return new TreeCharacterHistoryNodeMonitor<charType, treeType>(*this);
+    return new TreeCharacterHistoryNodeMonitor<charType>(*this);
 }
 
-template<class charType, class treeType>
-void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::closeStream() {
+template<class charType>
+void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::closeStream() {
     outStream.close();
 }
 
-template<class charType, class treeType>
-std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::buildExtendedNewick( void ) {
+template<class charType>
+std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::buildExtendedNewick( void ) {
     //tree->getValue().getRoot().setNewickNeedsRefreshing(true);
     std::string newick = buildExtendedNewick( &tree->getValue().getRoot() );
     return newick;
 }
 
-template<class charType, class treeType>
-std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::buildCharacterHistoryString(TopologyNode* n, std::string infoStr)
+template<class charType>
+std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::buildCharacterHistoryString(TopologyNode* n, std::string infoStr)
 {
 
-    AbstractTreeHistoryCtmc<charType, treeType>* p = static_cast< AbstractTreeHistoryCtmc<charType, treeType>* >(&variable->getDistribution());
+    AbstractTreeHistoryCtmc<charType>* p = static_cast< AbstractTreeHistoryCtmc<charType>* >(&variable->getDistribution());
     const BranchHistory& bh = p->getHistory(*n);
     std::stringstream ss;
     
@@ -179,16 +173,16 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
     }
     else if (infoStr=="clado_state")
     {
-        BiogeographicTreeHistoryCtmc<charType, treeType>* q = static_cast<BiogeographicTreeHistoryCtmc<charType, treeType>* >(p);
+        BiogeographicTreeHistoryCtmc<charType>* q = static_cast<BiogeographicTreeHistoryCtmc<charType>* >(p);
         int cladoState = q->getCladogenicState(*n);
         
-        if (cladoState == 0)
+        if (cladoState == BiogeographicCladoEvent::SYMPATRY_NARROW)
             ss << "n";
-        else if (cladoState == 1)
+        else if (cladoState == BiogeographicCladoEvent::SYMPATRY_WIDESPREAD)
             ss << "w";
-        else if (cladoState == 2)
+        else if (cladoState == BiogeographicCladoEvent::SYMPATRY_SUBSET)
             ss << "s";
-        else if (cladoState == 3)
+        else if (cladoState == BiogeographicCladoEvent::ALLOPATRY)
             ss << "a";
         else
             ss << "NA";
@@ -196,7 +190,7 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
     }
     else if (infoStr=="bud_state")
     {
-        BiogeographicTreeHistoryCtmc<charType, treeType>* q = static_cast<BiogeographicTreeHistoryCtmc<charType, treeType>* >(p);
+        BiogeographicTreeHistoryCtmc<charType>* q = static_cast<BiogeographicTreeHistoryCtmc<charType>* >(p);
         int budState = (q)->getBuddingState(*n);
         
         ss << ( budState == 1 ? n->getIndex() : n->getParent().getChild(1).getIndex() );
@@ -207,10 +201,10 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
         const std::multiset<CharacterEvent*,CharacterEventCompare>& evts = bh.getHistory();
         std::multiset<CharacterEvent*,CharacterEventCompare>::const_iterator it;
         
-        std::vector<unsigned> v(numStates,0);
+        std::vector<unsigned> v(num_states,0);
         for (it = evts.begin(); it != evts.end(); it++)
         {
-            unsigned s = (*it)->getState();
+            size_t s = (*it)->getState();
             v[s] += 1;
         }
 
@@ -230,29 +224,29 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
         std::multiset<CharacterEvent*,CharacterEventCompare>::const_iterator it;
         std::vector<CharacterEvent*> characters = bh.getParentCharacters();
         
-        std::vector<unsigned> v(numStates*numStates,0);
+        std::vector<unsigned> v(num_states*num_states,0);
         for (it = evts.begin(); it != evts.end(); it++)
         {
-            size_t idx = (*it)->getIndex();
-            unsigned from = characters[idx]->getState();
-            unsigned to = (*it)->getState();
-            v[ numStates*from + to ] += 1;
+            size_t idx = (*it)->getCharacterIndex();
+            size_t from = characters[idx]->getState();
+            size_t to = (*it)->getState();
+            v[ num_states*from + to ] += 1;
             characters[idx] = (*it);
         }
         
         // loop over states
-        for (size_t i = 0; i < numStates; i++)
+        for (size_t i = 0; i < num_states; i++)
         {
             if (i != 0)
                 ss << ",";
 //            ss << i << ":{";
             ss << "{";
-            for (size_t j = 0; j < numStates; j++)
+            for (size_t j = 0; j < num_states; j++)
             {
                 if (j != 0)
                     ss << ",";
-//                ss << j << ":" << v[numStates*i + j];
-                ss << v[numStates*i + j];
+//                ss << j << ":" << v[num_states*i + j];
+                ss << v[num_states*i + j];
             }
             ss << "}";
         }
@@ -264,8 +258,12 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
         std::multiset<CharacterEvent*,CharacterEventCompare>::const_iterator it;
         std::vector<CharacterEvent*> characters = bh.getParentCharacters();
         
-        std::vector<unsigned> v(numStates*numStates,0);
-        double ndAge = n->getAge();
+        std::vector<unsigned> v(num_states*num_states,0);
+        double ndAge;
+        if (n->isRoot())
+            ndAge = n->getAge() * 5;
+        else
+            ndAge = n->getParent().getAge();
         double brLen = n->getBranchLength();
         
         for (it = evts.begin(); it != evts.end(); it++)
@@ -277,7 +275,7 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
             ss << "t:" << (*it)->getTime() << ",";
             ss << "a:" << ndAge - brLen * (*it)->getTime() << ",";
             ss << "s:" << (*it)->getState() << ",";
-            ss << "i:" << (*it)->getIndex() << "";
+            ss << "i:" << (*it)->getCharacterIndex() << "";
             ss << "}";
 
         }
@@ -288,8 +286,8 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
 }
 
 /* Build newick string */
-template<class charType, class treeType>
-std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::buildExtendedNewick( TopologyNode* n ) {
+template<class charType>
+std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::buildExtendedNewick( TopologyNode* n ) {
     // create the newick string
     std::stringstream o;
     
@@ -349,15 +347,15 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
 }
 
 /* Build newick string */
-template<class charType, class treeType>
-std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::buildNumEventsStr(TopologyNode* nd)
+template<class charType>
+std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::buildNumEventsStr(TopologyNode* nd)
 {
     
-    AbstractTreeHistoryCtmc<charType, treeType>* p = static_cast< AbstractTreeHistoryCtmc<charType, treeType>* >(&variable->getDistribution());
+    AbstractTreeHistoryCtmc<charType>* p = static_cast< AbstractTreeHistoryCtmc<charType>* >(&variable->getDistribution());
     BranchHistory* bh = &p->getHistory(*nd);
     
     std::stringstream ss;
-    double eventRatio = (double)bh->getNumEvents() / 1.0; //nd->getBranchLength();
+    double eventRatio = (double)bh->getNumberEvents() / 1.0; //nd->getBranchLength();
     
     ss << eventRatio;
     return ss.str();
@@ -367,11 +365,11 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
 
 
 /* Build newick string */
-template<class charType, class treeType>
-std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::buildNumEventsStr(TopologyNode* nd, unsigned state)
+template<class charType>
+std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::buildNumEventsStr(TopologyNode* nd, unsigned state)
 {
     
-    AbstractTreeHistoryCtmc<charType, treeType>* p = static_cast< AbstractTreeHistoryCtmc<charType, treeType>* >(&variable->getDistribution());
+    AbstractTreeHistoryCtmc<charType>* p = static_cast< AbstractTreeHistoryCtmc<charType>* >(&variable->getDistribution());
     BranchHistory* bh = &p->getHistory(*nd);
     
     const std::multiset<CharacterEvent*,CharacterEventCompare>& evts = bh->getHistory();
@@ -392,10 +390,10 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
     
 }
 
-template<class charType, class treeType>
-std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::buildNumEventsForTreeStr(unsigned state)
+template<class charType>
+std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::buildNumEventsForTreeStr(unsigned state)
 {
-    AbstractTreeHistoryCtmc<charType, treeType>* p = static_cast< AbstractTreeHistoryCtmc<charType, treeType>* >(&variable->getDistribution());
+    AbstractTreeHistoryCtmc<charType>* p = static_cast< AbstractTreeHistoryCtmc<charType>* >(&variable->getDistribution());
     
     const std::vector<TopologyNode*>& nds = tree->getValue().getNodes();
     unsigned v = 0;
@@ -422,13 +420,13 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
 }
 
 
-template<class charType, class treeType>
-std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::buildCladoForTreeStr(unsigned state)
+template<class charType>
+std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::buildCladoForTreeStr(unsigned state)
 {
     std::stringstream ss;
     
-    AbstractTreeHistoryCtmc<charType, treeType>* p = static_cast< AbstractTreeHistoryCtmc<charType, treeType>* >(&variable->getDistribution());
-    BiogeographicTreeHistoryCtmc<charType, treeType>* q = static_cast<BiogeographicTreeHistoryCtmc<charType, treeType>* >(p);
+    AbstractTreeHistoryCtmc<charType>* p = static_cast< AbstractTreeHistoryCtmc<charType>* >(&variable->getDistribution());
+    BiogeographicTreeHistoryCtmc<charType>* q = static_cast<BiogeographicTreeHistoryCtmc<charType>* >(p);
     
     const std::vector<TopologyNode*>& nds = tree->getValue().getNodes();
     
@@ -442,13 +440,13 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
     return ss.str();
 }
 
-template<class charType, class treeType>
-std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::buildCladoStr(TopologyNode* nd)
+template<class charType>
+std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::buildCladoStr(TopologyNode* nd)
 {
     std::stringstream ss;
     
-    AbstractTreeHistoryCtmc<charType, treeType>* p = static_cast< AbstractTreeHistoryCtmc<charType, treeType>* >(&variable->getDistribution());
-    BiogeographicTreeHistoryCtmc<charType, treeType>* q = static_cast<BiogeographicTreeHistoryCtmc<charType, treeType>* >(p);
+    AbstractTreeHistoryCtmc<charType>* p = static_cast< AbstractTreeHistoryCtmc<charType>* >(&variable->getDistribution());
+    BiogeographicTreeHistoryCtmc<charType>* q = static_cast<BiogeographicTreeHistoryCtmc<charType>* >(p);
     int cladoState = q->getCladogenicState(*nd);
     ss << cladoState;
     
@@ -465,8 +463,8 @@ std::string RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::b
 }
 
 /** Monitor value at generation gen */
-template<class charType, class treeType>
-void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::monitor(unsigned long gen) {
+template<class charType>
+void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::monitor(unsigned long gen) {
     
     // get the printing frequency
     unsigned long samplingFrequency = printgen;
@@ -517,7 +515,7 @@ void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::monitor(
         
         if (showNumEvents)
         {
-            for (unsigned s = 0; s < numStates; s++)
+            for (unsigned s = 0; s < num_states; s++)
             {
                 outStream << separator << buildNumEventsForTreeStr(s);
             }
@@ -528,7 +526,7 @@ void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::monitor(
             for (size_t i = 0; i < tree->getValue().getNumberOfNodes(); i++)
             {
                 TopologyNode* nd = &tree->getValue().getNode(i);
-                for (unsigned s = 0; s < numStates; s++)
+                for (unsigned s = 0; s < num_states; s++)
                 {
                     if (!nd->isRoot())
                         outStream << separator << buildNumEventsStr(nd, s);
@@ -553,8 +551,8 @@ void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::monitor(
 
 
 /** open the file stream for printing */
-template<class charType, class treeType>
-void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::openStream(void) {
+template<class charType>
+void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::openStream(void) {
     
     // open the stream to the file
     if (append)
@@ -564,8 +562,8 @@ void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::openStre
 }
 
 /** Print header for monitored values */
-template<class charType, class treeType>
-void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::printHeader() {
+template<class charType>
+void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::printHeader() {
     
     // print one column for the iteration number
     outStream << "Iter";
@@ -590,7 +588,7 @@ void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::printHea
     
     if (showNumEvents)
     {
-        for (size_t s = 0; s < numStates; s++)
+        for (size_t s = 0; s < num_states; s++)
         {
             outStream << separator << "t_s" << s;
         }
@@ -601,7 +599,7 @@ void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::printHea
         for (size_t i = 0; i < tree->getValue().getNumberOfNodes(); i++)
         {
             TopologyNode* nd = &tree->getValue().getNode(i);
-            for (size_t s = 0; s < numStates; s++)
+            for (size_t s = 0; s < num_states; s++)
             {
                 if (!nd->isRoot())
                     outStream << separator << "b" << nd->getIndex() << "_s" << s;
@@ -622,33 +620,18 @@ void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::printHea
     outStream << std::endl;
 }
 
-template<class charType, class treeType>
-void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType, treeType>::swapNode(DagNode *oldN, DagNode *newN) {
-    
-    bool found = false;
+template<class charType>
+void RevBayesCore::TreeCharacterHistoryNodeMonitor<charType>::swapNode(DagNode *oldN, DagNode *newN) {
+
     if ( oldN == tree )
     {
-        tree = static_cast< TypedDagNode< treeType > *>( newN );
-        found = true;
+        tree = static_cast< TypedDagNode< Tree > *>( newN );
     }
     else if (oldN == variable)
     {
-        variable = static_cast<StochasticNode<AbstractDiscreteCharacterData>* >(newN);
+        variable = static_cast<StochasticNode<AbstractHomologousDiscreteCharacterData>* >(newN);
     }
 
-    /*
-     if (found == false)
-     {
-     // error catching
-     if ( nodeVariables.find(oldN) == nodeVariables.end() ) {
-     throw RbException("Cannot replace DAG node in this monitor because the monitor doesn't hold this DAG node.");
-     }
-     
-     nodeVariables.erase( oldN );
-     nodeVariables.insert( newN );
-     }
-     */
-    
     // delegate to base class
     Monitor::swapNode(oldN, newN);
 }

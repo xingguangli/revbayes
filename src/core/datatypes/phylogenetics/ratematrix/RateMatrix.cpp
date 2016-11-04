@@ -1,5 +1,7 @@
 #include "RateMatrix.h"
+#include "RbException.h"
 #include "RbMathMatrix.h"
+#include "TypedDagNode.h"
 
 #include <fstream>
 #include <sstream>
@@ -9,8 +11,7 @@
 using namespace RevBayesCore;
 
 /** Construct rate matrix with n states */
-RateMatrix::RateMatrix(size_t n) :
-    numStates( n )
+RateMatrix::RateMatrix(size_t n) : RateGenerator(n)
 {
 
 }
@@ -26,51 +27,29 @@ RateMatrix::~RateMatrix(void)
 }
 
 
-size_t RateMatrix::getNumberOfStates( void ) const {
-    return numStates;
-}
-
-
-
-size_t RateMatrix::size( void ) const {
-    return numStates;
-}
-
-
-
-std::ostream& RevBayesCore::operator<<(std::ostream& o, const RateMatrix& x) {
-    std::streamsize previousPrecision = o.precision();
-    std::ios_base::fmtflags previousFlags = o.flags();
-    
-    o << "[ ";
-    o << std::fixed;
-    o << std::setprecision(4);
-    
-    // print the RbMatrix with each column of equal width and each column centered on the decimal
-    for (size_t i=0; i < x.size(); i++) {
-        if (i == 0)
-            o << "[ ";
-        else 
-            o << "  ";
-        
-        for (size_t j = 0; j < x.size(); ++j) 
-        {
-            if (j != 0)
-                o << ", ";
-            o << x[i][j];
-        }
-        o <<  " ]";
-        
-        if (i == x.size()-1)
-            o << " ]";
-        else 
-            o << " ,\n";
-        
+RateMatrix& RateMatrix::assign(const Assignable &m)
+{
+    const RateMatrix *rm = dynamic_cast<const RateMatrix*>(&m);
+    if ( rm != NULL )
+    {
+        return operator=(*rm);
     }
-    
-    o.setf(previousFlags);
-    o.precision(previousPrecision);
-    
-    return o;
+    else
+    {
+        throw RbException("Could not assign rate matrix.");
+    }
 }
 
+void RateMatrix::executeMethod(const std::string &n, const std::vector<const DagNode*> &args, RbVector<double> &rv) const
+{
+    size_t n_states = this->getNumberOfStates();
+//    rv.resize(n_states);
+    rv.clear();
+    
+    size_t from_idx = static_cast<const TypedDagNode<int> *>( args[0] )->getValue()-1;
+    
+    for (size_t to_idx = 0; to_idx < n_states; to_idx++)
+    {
+        rv.push_back(this->getRate(from_idx, to_idx, 0.0, 1.0));
+    }
+}

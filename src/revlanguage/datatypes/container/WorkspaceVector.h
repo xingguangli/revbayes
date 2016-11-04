@@ -29,13 +29,13 @@ namespace RevLanguage {
     class WorkspaceVector : public WorkspaceToCoreWrapperObject<RevBayesCore::RbVector<rlType> >, public Container {
         
     public:
-        typedef typename rlType::valueType          elementType;
-        typedef RevBayesCore::RbVector<elementType> vectorRbPtr;
+//        typedef typename rlType::valueType          elementType;
+//        typedef RevBayesCore::RbVector<elementType> vectorRbPtr;
         typedef std::vector<rlType*>                vectorRlPtr;
         
                                                     WorkspaceVector(void);                                              //!< Default constructor
                                                     WorkspaceVector(const RevBayesCore::RbVector<rlType>& v);           //!< Constructor from rb value pointers
-                                                    WorkspaceVector(const vectorRbPtr& v);                              //!< Constructor from rb value pointers
+//                                                    WorkspaceVector(const vectorRbPtr& v);                              //!< Constructor from rb value pointers
                                                     WorkspaceVector(const vectorRlPtr& v);                              //!< Constructor from rl value pointers
         
         // STL-like vector functions provided here
@@ -43,7 +43,6 @@ namespace RevLanguage {
         const rlType&                               operator[](size_t index) const;                                     //!< Subscript operator (const)
         void                                        pop_back(void);                                                     //!< Drop element at back
         void                                        pop_front(void);                                                    //!< Drop element from front
-        void                                        push_back(const rlType &x);                                         //!< Append element to end
         void                                        push_back(const RevObject &x);                                      //!< Append element to end
         void                                        push_front(const rlType &x);                                        //!< Append element to end
         size_t                                      size(void) const;                                                   //!< The size of the vector
@@ -53,23 +52,31 @@ namespace RevLanguage {
         static const std::string&                   getClassType(void);                                                 //!< Get Rev type
         static const TypeSpec&                      getClassTypeSpec(void);                                             //!< Get class type spec
         virtual const TypeSpec&                     getTypeSpec(void) const;                                            //!< Get the object type spec of the instance        
-        
-        // Basic utility function provided here
-        void                                        printValue(std::ostream& o) const;                                  //!< Print value for user
-        
+        virtual RevPtr<RevVariable>                 executeMethod(std::string const &name, const std::vector<Argument> &args, bool &found); //!< Map member methods to internal methods
+
         // Container functions provided here
         virtual rlType*                             getElement(size_t idx) const;                                                   //!< Get element variable (single index)
         
+        // Type conversion functions
+//        RevObject*                                  convertTo(const TypeSpec& type) const;                      //!< Convert to requested type
+//        virtual double                              isConvertibleTo(const TypeSpec& type, bool once) const;     //!< Is this object convertible to the requested type?
+
         // WorkspaceVector functions
-        vectorRbPtr                                 getVectorRbPointer(void) const;                                     //!< Generate vector of rb pointers
+//        vectorRbPtr                                 getVectorRbPointer(void) const;                                     //!< Generate vector of rb pointers
+        
+        void                                        printValue(std::ostream& o, bool user) const;                                  //!< Print value for user
+
         
     private:
+
+        void                                        initMethods(void);
 
     };
 
 }
 
 
+#include "Natural.h"
 #include <algorithm>
 
 using namespace RevLanguage;
@@ -86,6 +93,7 @@ WorkspaceVector<rlType>::WorkspaceVector( void ) :
 {
     this->value = new RevBayesCore::RbVector< rlType >();
     
+    initMethods();
 }
 
 
@@ -103,22 +111,23 @@ WorkspaceVector<rlType>::WorkspaceVector( const RevBayesCore::RbVector<rlType>& 
     delete this->value;
     
     this->value = v.clone();
+    initMethods();
 }
 
 
-/**
- * Construct from vector of pointers to internal value
- * objects. We assume here that we are responsible for
- * managing the associated memory. Here we need to make
- * copies of the original objects, so we delete those
- * after we are done.
- */
-template <typename rlType>
-WorkspaceVector<rlType>::WorkspaceVector( const vectorRbPtr& v ) :
-    WorkspaceToCoreWrapperObject<RevBayesCore::RbVector<typename rlType::valueType> >()
-{
-    *this->value = v;
-}
+///**
+// * Construct from vector of pointers to internal value
+// * objects. We assume here that we are responsible for
+// * managing the associated memory. Here we need to make
+// * copies of the original objects, so we delete those
+// * after we are done.
+// */
+//template <typename rlType>
+//WorkspaceVector<rlType>::WorkspaceVector( const vectorRbPtr& v ) :
+//    WorkspaceToCoreWrapperObject<RevBayesCore::RbVector<typename rlType::valueType> >()
+//{
+//    *this->value = v;
+//}
 
 
 /**
@@ -137,6 +146,8 @@ WorkspaceVector<rlType>::WorkspaceVector( const vectorRlPtr& v ) : WorkspaceToCo
 //    {
 //        this->value->push_back( **it );
 //    }
+    
+    initMethods();
     
 }
 
@@ -173,6 +184,119 @@ WorkspaceVector<rlType>* WorkspaceVector<rlType>::clone() const
 
 
 /**
+ * Convert to object of another type. Here we use the setElements function
+ * of the Container base class to do generic type conversion in all cases
+ * where the elements are individually convertible to the desired element
+ * type. This is not done automatically for us because of the templating.
+ * A vector of RealPos, for example, does not inherit from a vector of Real,
+ * which means that a vector of RealPos is not a specialized vector of Real
+ * in the C++ sense (or in the Rev sense).
+ */
+//template <typename rlType>
+//RevObject* WorkspaceVector<rlType>::convertTo(const TypeSpec &type) const
+//{
+//    
+//    // First check that we are not asked to convert to our own type
+//    if ( type == getClassTypeSpec() )
+//    {
+//        return this->clone();
+//    }
+//    
+//    // Test whether we want to convert to another generic model vector
+//    if ( type.getParentType() == getClassTypeSpec().getParentType() )
+//    {
+//        // We are both model vectors. Rely on generic code to cover all allowed conversions
+//        
+//        // First generate an empty model vector of the desired type
+//        RevObject *emptyContainer = Workspace::userWorkspace().makeNewDefaultObject( type.getType() );
+//        Container *theConvertedContainer = dynamic_cast<Container*>( emptyContainer );
+//        
+//        // test if the cast succeeded
+//        if (theConvertedContainer == NULL)
+//        {
+//            throw RbException("Could not convert a container of type " + this->getClassType() + " to a container of type " + type.getType() );
+//        }
+//        
+//        for ( typename RevBayesCore::RbConstIterator<elementType> i = this->getValue().begin(); i != this->getValue().end(); ++i )
+//        {
+//            
+//            rlType orgElement = rlType( *i );
+//            if ( orgElement.isType( *type.getElementTypeSpec() ) )
+//            {
+//                theConvertedContainer->push_back( orgElement );
+//            }
+//            else
+//            {
+//                RevObject *convObj = orgElement.convertTo( *type.getElementTypeSpec() );
+//                theConvertedContainer->push_back( *convObj );
+//                delete convObj;
+//            }
+//            
+//        }
+//        
+//        // Now return the converted container object
+//        return emptyContainer;
+//    }
+//    
+//    // Call the base class if all else fails. This will eventually throw an error if the type conversion is not supported.
+//    return this->ModelObject<RevBayesCore::RbVector<typename rlType::valueType> >::convertTo( type );
+//}
+
+
+/**
+ * Map calls to member methods.
+ */
+template <typename rlType>
+RevPtr<RevVariable> WorkspaceVector<rlType>::executeMethod( std::string const &name, const std::vector<Argument> &args, bool &found )
+{
+    
+    if ( name == "size" )
+    {
+        found = true;
+        
+        // return a new RevVariable with the size of this container
+        return RevPtr<RevVariable>( new RevVariable( new Natural( size() ), "" ) );
+    }
+    else if ( name == "[]" )
+    {
+        found = true;
+        
+        int index = static_cast<const Natural&>( args[0].getVariable()->getRevObject() ).getValue() - 1;
+        return RevPtr<RevVariable>( new RevVariable( getElement( index ) ) );
+    }
+//    else if ( name == "sort" )
+//    {
+//        found = true;
+//        
+//        // Check whether the DAG node is actually a constant node
+//        if ( !this->dagNode->isConstant() )
+//        {
+//            throw RbException( "Only constant variables can be sorted." );
+//        }
+//        sort();
+//        
+//        return NULL;
+//    }
+//    else if ( name == "unique" )
+//    {
+//        found = true;
+//        
+//        // Check whether the DAG node is actually a constant node
+//        if ( !this->dagNode->isConstant() )
+//        {
+//            throw RbException( "Only constant variables can be made unique." );
+//        }
+//        unique();
+//        
+//        return NULL;
+//    }
+    
+    return WorkspaceToCoreWrapperObject<RevBayesCore::RbVector<rlType> >::executeMethod( name, args, found );
+}
+
+
+
+/**
  * Get Rev type of object. This is the Rev object element type followed by
  * a single set of square brackets. This provides a nice and convenient way
  * of specifying generic types of vectors for all Rev object types.
@@ -195,9 +319,9 @@ const std::string& WorkspaceVector<rlType>::getClassType(void)
 template <typename rlType>
 const TypeSpec& WorkspaceVector<rlType>::getClassTypeSpec(void)
 {
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), &WorkspaceToCoreWrapperObject<RevBayesCore::RbVector<typename rlType::valueType> >::getClassTypeSpec(), &rlType::getClassTypeSpec() );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), &WorkspaceToCoreWrapperObject<RevBayesCore::RbVector<rlType> >::getClassTypeSpec(), &rlType::getClassTypeSpec() );
     
-	return revTypeSpec;
+	return rev_type_spec;
 }
 
 
@@ -213,31 +337,55 @@ rlType* WorkspaceVector<rlType>::getElement(size_t idx) const
 template <typename rlType>
 const TypeSpec& WorkspaceVector<rlType>::getTypeSpec(void) const
 {
-    //    static TypeSpec typeSpec = getClassTypeSpec();
+    //    static TypeSpec type_spec = getClassTypeSpec();
     
-    //    return typeSpec;
+    //    return type_spec;
     
     return getClassTypeSpec();  // This should do the trick; there should be a separate version of the function for each template type
 }
 
 
+///**
+// * Here we return a vector of clones of the elementType values of the
+// * Rev object elements. The clones are put in an RbVector, which is
+// * assumed to take on ownership of those element value clones.
+// */
+//template<typename rlType>
+//RevBayesCore::RbVector<typename rlType::valueType> WorkspaceVector<rlType>::getVectorRbPointer( void ) const
+//{
+//    vectorRbPtr theVector;
+//    
+//    RevBayesCore::RbIterator< rlType > it;
+//    for ( it = this->value->begin(); it != this->value->end(); ++it )
+//    {
+//        theVector.push_back( it->getValue() );
+//    }
+//    
+//    return theVector;
+//}
+
+
 /**
- * Here we return a vector of clones of the elementType values of the
- * Rev object elements. The clones are put in an RbVector, which is
- * assumed to take on ownership of those element value clones.
+ * Initialize the methods.
  */
-template<typename rlType>
-RevBayesCore::RbVector<typename rlType::valueType> WorkspaceVector<rlType>::getVectorRbPointer( void ) const
+template <typename rlType>
+void WorkspaceVector<rlType>::initMethods( void )
 {
-    vectorRbPtr theVector;
     
-    RevBayesCore::RbIterator< rlType > it;
-    for ( it = this->value->begin(); it != this->value->end(); ++it )
-    {
-        theVector.push_back( it->getValue() );
-    }
+    ArgumentRules* sizeArgRules = new ArgumentRules();
+    this->methods.addFunction( new MemberProcedure( "size", Natural::getClassTypeSpec(), sizeArgRules) );
     
-    return theVector;
+    ArgumentRules* elementArgRules = new ArgumentRules();
+    elementArgRules->push_back( new ArgumentRule( "index", Natural::getClassTypeSpec(), "The index of the element.", ArgumentRule::BY_VALUE, ArgumentRule::ANY ) );
+    this->methods.addFunction( new MemberProcedure( "[]", rlType::getClassTypeSpec(), elementArgRules ) );
+
+    
+    ArgumentRules* sortArgRules = new ArgumentRules();
+    this->methods.addFunction( new MemberProcedure( "sort", RlUtils::Void, sortArgRules) );
+    
+    ArgumentRules* uniqueArgRules = new ArgumentRules();
+    this->methods.addFunction( new MemberProcedure( "unique", RlUtils::Void, uniqueArgRules) );
+    
 }
 
 
@@ -260,17 +408,6 @@ void WorkspaceVector<rlType>::pop_front( void )
     this->value->erase( this->value->begin() );
 }
 
-/**
- * Push a Rev object element onto the back of the vector.
- */
-template <typename rlType>
-void WorkspaceVector<rlType>::push_back( const rlType &x )
-{
-
-    // Push it onto the back of the elements vector
-    this->value->push_back( x );
-}
-
 
 /**
  * Push a Rev object element onto the back of the vector.
@@ -288,7 +425,7 @@ void WorkspaceVector<rlType>::push_back( const RevObject &x )
     }
     
     // Push it onto the back of the elements vector
-    this->push_back( *x_converted );
+    this->value->push_back( *x_converted );
 }
 
 
@@ -310,25 +447,32 @@ void WorkspaceVector<rlType>::push_front( const rlType &x )
  * work well for such cases.
  */
 template<typename rlType>
-void WorkspaceVector<rlType>::printValue( std::ostream& o ) const
+void WorkspaceVector<rlType>::printValue( std::ostream& o, bool user ) const
 {
     o << std::endl;
 
     std::stringstream s;
     if ( size() == 1 )
+    {
         s << getClassType() << " vector with 1 value";
+    }
     else
+    {
         s << getClassType() << " vector with " << size() << " values";
+    }
     o << s.str() << std::endl;
     
     for ( size_t i = 0; i < s.str().size(); ++i )
+    {
         o << "=";
+    }
     o << std::endl << std::endl;
 
     for ( size_t i = 0; i < this->value->size(); ++i )
     {
         o << "[" << i + 1 << "]" << std::endl;
-            (*this->value)[i].printValue(o);
+        RevObject& tmp = (*this->value)[i];
+        tmp.printValue(o,true);
         o << std::endl << std::endl;
     }
 

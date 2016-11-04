@@ -8,7 +8,6 @@
 #import "ToolDistanceMatrix.h"
 #import "WindowControllerDistanceMatrix.h"
 
-#include "DistanceMatrix.h"
 #include "Parser.h"
 #include "RevNullObject.h"
 #include "Workspace.h"
@@ -158,14 +157,19 @@
     const RevLanguage::RevObject& dv = RevLanguage::Workspace::userWorkspace().getRevObject(distName);
     if ( RevLanguage::RevNullObject::getInstance() == dv )
         {
-        //[self readDataError:@"Data could not be read" forVariableNamed:nsVariableName];
-        NSRunAlertPanel(@"Problem Constructing Distance Matrix", @"Could not find matrix in work space", @"OK", nil, nil);
+        NSAlert* alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Problem Constructing Distance Matrix"];
+        [alert setInformativeText:@"Could not find matrix in work space"];
+        [alert runModal];
+        //NSRunAlertPanel(@"Problem Constructing Distance Matrix", @"Could not find matrix in work space", @"OK", nil, nil);
+        
         [self stopProgressIndicator];
         return;
         }
     
     // instantiate data matrices for the gui, by reading the matrices that were 
     // read in by the core
+#   if 0
     const RevBayesCore::DistanceMatrix *dm = dynamic_cast<const RevBayesCore::DistanceMatrix *>( &dv );
     if ( NULL == dm )
         {
@@ -203,6 +207,7 @@
     // remove the variables from the core
     RevLanguage::Workspace::userWorkspace().eraseVariable(dataName);
     RevLanguage::Workspace::userWorkspace().eraseVariable(distName);
+#   endif
 
     [self stopProgressIndicator];
 }

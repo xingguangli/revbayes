@@ -21,7 +21,7 @@
 
 using namespace RevLanguage;
 
-Func_seed::Func_seed() : Function()
+Func_seed::Func_seed() : Procedure()
 {
     
 }
@@ -35,14 +35,12 @@ Func_seed* Func_seed::clone( void ) const
 
 
 /** Execute function: We rely on getValue and overloaded push_back to provide functionality */
-RevPtr<Variable> Func_seed::execute( void )
+RevPtr<RevVariable> Func_seed::execute( void )
 {
     
-    std::vector<unsigned int> s;
+    unsigned int s;
     const Natural &val1 = static_cast<const Natural &>( args[0].getVariable()->getRevObject() );
-    s.push_back( (unsigned int) val1.getValue() );
-    const Natural &val2 = static_cast<const Natural &>( args[1].getVariable()->getRevObject() );
-    s.push_back( (unsigned int) val2.getValue() );
+    s = (unsigned int) val1.getValue();
     
     RevBayesCore::RandomNumberGenerator *rng = RevBayesCore::GLOBAL_RNG;
     rng->setSeed( s );
@@ -56,14 +54,13 @@ const ArgumentRules& Func_seed::getArgumentRules( void ) const
 {
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet )
+    if ( !rules_set )
     {
         
-        argumentRules.push_back( new ArgumentRule( "seed1", Natural::getClassTypeSpec(), ArgumentRule::BY_VALUE ) );
-        argumentRules.push_back( new ArgumentRule( "seed2", Natural::getClassTypeSpec(), ArgumentRule::BY_VALUE ) );
-        rulesSet = true;
+        argumentRules.push_back( new ArgumentRule( "x", Natural::getClassTypeSpec(), "The number used to seed the random number generator.", ArgumentRule::BY_VALUE, ArgumentRule::ANY ) );
+        rules_set = true;
     }
     
     return argumentRules;
@@ -71,7 +68,8 @@ const ArgumentRules& Func_seed::getArgumentRules( void ) const
 
 
 /** Get Rev type of object */
-const std::string& Func_seed::getClassType(void) { 
+const std::string& Func_seed::getClassType(void)
+{
     
     static std::string revType = "Func_seed";
     
@@ -80,25 +78,40 @@ const std::string& Func_seed::getClassType(void) {
 
 
 /** Get class type spec describing type of object */
-const TypeSpec& Func_seed::getClassTypeSpec(void) { 
+const TypeSpec& Func_seed::getClassTypeSpec(void)
+{
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
+}
+
+
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func_seed::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "seed";
+    
+    return f_name;
 }
 
 
 /** Get type spec */
-const TypeSpec& Func_seed::getTypeSpec( void ) const {
+const TypeSpec& Func_seed::getTypeSpec( void ) const
+{
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }
 
 
 /** Get return type */
-const TypeSpec& Func_seed::getReturnType( void ) const {
+const TypeSpec& Func_seed::getReturnType( void ) const
+{
     
     return RevNullObject::getClassTypeSpec();
 }

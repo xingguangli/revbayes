@@ -8,13 +8,18 @@
 using namespace RevLanguage;
 
 /** default constructor */
-Func_sum::Func_sum( void ) : Function( )
+Func_sum::Func_sum( void ) : TypedFunction<Real>( )
 {
     
 }
 
 
-/** Clone object */
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'b'.
+ *
+ * \return A new copy of the process.
+ */
 Func_sum* Func_sum::clone( void ) const
 {
     
@@ -22,17 +27,13 @@ Func_sum* Func_sum::clone( void ) const
 }
 
 
-RevPtr<Variable> Func_sum::execute()
+RevBayesCore::TypedFunction<double>* Func_sum::createFunction( void ) const
 {
     
     RevBayesCore::TypedDagNode<RevBayesCore::RbVector<double> >* arg = static_cast<const ModelVector<Real> &>( this->args[0].getVariable()->getRevObject() ).getDagNode();
     RevBayesCore::SumFunction* f = new RevBayesCore::SumFunction( arg );
     
-    DeterministicNode<double> *detNode = new DeterministicNode<double>("", f, this->clone());
-    
-    Real* value = new Real( detNode );
-    
-    return new Variable( value );
+    return f;
 }
 
 
@@ -41,14 +42,14 @@ const ArgumentRules& Func_sum::getArgumentRules( void ) const
 {
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet )
+    if ( !rules_set )
     {
         
-        argumentRules.push_back( new ArgumentRule( "x", ModelVector<Real>::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
+        argumentRules.push_back( new ArgumentRule( "x", ModelVector<Real>::getClassTypeSpec(), "A vector of numbers.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
         
-        rulesSet = true;
+        rules_set = true;
     }
     
     return argumentRules;
@@ -63,30 +64,33 @@ const std::string& Func_sum::getClassType(void)
 	return revType;
 }
 
+
 /* Get class type spec describing type of object */
 const TypeSpec& Func_sum::getClassTypeSpec(void)
 {
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec;
+	return rev_type_spec;
 }
 
 
-/* Get return type */
-const TypeSpec& Func_sum::getReturnType( void ) const
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func_sum::getFunctionName( void ) const
 {
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "sum";
     
-    static TypeSpec returnTypeSpec = Real::getClassTypeSpec();
-    
-    return returnTypeSpec;
+    return f_name;
 }
 
 
 const TypeSpec& Func_sum::getTypeSpec( void ) const
 {
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }

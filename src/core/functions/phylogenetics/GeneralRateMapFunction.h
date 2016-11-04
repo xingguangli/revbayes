@@ -13,7 +13,7 @@
 #include "RateMap.h"
 #include "RateMatrix.h"
 #include "RbVector.h"
-#include "TimeTree.h"
+#include "Tree.h"
 #include "TypedDagNode.h"
 #include "TypedFunction.h"
 
@@ -34,8 +34,8 @@ namespace RevBayesCore {
         // set parameters
         void                                                setClockRate(const TypedDagNode< double > *r);
         void                                                setClockRate(const TypedDagNode< RevBayesCore::RbVector< double > > *r);
-        void                                                setRateMatrix(const TypedDagNode<RateMatrix>* rm);
-//        void                                                setRateMatrix(const TypedDagNode<RbVector<RateMatrix> > >* rm);
+        void                                                setRateMatrix(const TypedDagNode<RateGenerator>* rm);
+//        void                                                setRateMatrix(const TypedDagNode<RbVector<RateGenerator> > >* rm);
         void                                                setRootFrequencies(const TypedDagNode< RevBayesCore::RbVector< double > > *f);
         void                                                update(void);
         
@@ -45,15 +45,15 @@ namespace RevBayesCore {
     private:
         
         // members
-        const TypedDagNode< double >*                               homogeneousClockRate;
-        const TypedDagNode< RevBayesCore::RbVector< double > >*     heterogeneousClockRates;
-        const TypedDagNode<RateMatrix>*                             homogeneousRateMatrix;
-        const TypedDagNode<RbVector<RateMatrix> >*                  heterogeneousRateMatrices;
-        const TypedDagNode<TimeTree>*                               tau;
-        const TypedDagNode<RevBayesCore::RbVector<double> >*        rootFrequencies;
+        const TypedDagNode< double >*                               homogeneous_clock_rate;
+        const TypedDagNode< RevBayesCore::RbVector< double > >*     heterogeneous_clock_rates;
+        const TypedDagNode<RateGenerator>*                             homogeneous_rate_matrix;
+        const TypedDagNode<RbVector<RateGenerator> >*                  heterogeneous_rate_matrices;
+//        const TypedDagNode<TimeTree>*                               tau;
+        const TypedDagNode<RevBayesCore::RbVector<double> >*        root_frequencies;
         
         // geography epochs
-        bool                                                branchHeterogeneousClockRates;
+        bool                                                branch_heterogeneous_clock_rates;
         bool                                                branchHeterogeneousRateMatrices;
         
     };

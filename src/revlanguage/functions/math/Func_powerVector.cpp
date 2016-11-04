@@ -9,78 +9,89 @@
 using namespace RevLanguage;
 
 /** default constructor */
-Func_powerVector::Func_powerVector( void ) : Function( ) {
+Func_powerVector::Func_powerVector( void ) : TypedFunction< ModelVector< RealPos > >( ) {
     
 }
 
 
-/** Clone object */
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'b'.
+ *
+ * \return A new copy of the process.
+ */
 Func_powerVector* Func_powerVector::clone( void ) const {
     
     return new Func_powerVector( *this );
 }
 
 
-RevPtr<Variable> Func_powerVector::execute() {
+RevBayesCore::TypedFunction< RevBayesCore::RbVector< double > >* Func_powerVector::createFunction( void ) const
+{
     
     RevBayesCore::TypedDagNode<RevBayesCore::RbVector<double> >* b = static_cast<const ModelVector<Real> &>( this->args[0].getVariable()->getRevObject() ).getDagNode();
     RevBayesCore::TypedDagNode<double>* e = static_cast<const Real &>( this->args[1].getVariable()->getRevObject() ).getDagNode();
     RevBayesCore::PowerVectorFunction* f = new RevBayesCore::PowerVectorFunction( b, e );
     
-    DeterministicNode<RevBayesCore::RbVector<double> > *detNode = new DeterministicNode<RevBayesCore::RbVector<double> >("", f, this->clone());
-    
-    ModelVector<RealPos>* value = new ModelVector<RealPos>( detNode );
-    
-    return new Variable( value );
+    return f;
 }
 
 
 /* Get argument rules */
-const ArgumentRules& Func_powerVector::getArgumentRules( void ) const {
+const ArgumentRules& Func_powerVector::getArgumentRules( void ) const
+{
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet ) {
+    if ( !rules_set )
+    {
         
-        argumentRules.push_back( new ArgumentRule( "base"    , ModelVector<Real>::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        argumentRules.push_back( new ArgumentRule( "exponent", Real::getClassTypeSpec()             , ArgumentRule::BY_CONSTANT_REFERENCE ) );
+        argumentRules.push_back( new ArgumentRule( "base"    , ModelVector<Real>::getClassTypeSpec(), "The base.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        argumentRules.push_back( new ArgumentRule( "exponent", Real::getClassTypeSpec()             , "The exponent.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
         
-        rulesSet = true;
+        rules_set = true;
     }
     
     return argumentRules;
 }
 
 
-const std::string& Func_powerVector::getClassType(void) {
+const std::string& Func_powerVector::getClassType(void)
+{
     
     static std::string revType = "Func_powerVector";
     
 	return revType;
 }
 
+
 /* Get class type spec describing type of object */
-const TypeSpec& Func_powerVector::getClassTypeSpec(void) {
+const TypeSpec& Func_powerVector::getClassTypeSpec(void)
+{
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec;
+	return rev_type_spec;
 }
 
 
-/* Get return type */
-const TypeSpec& Func_powerVector::getReturnType( void ) const {
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func_powerVector::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "power";
     
-    static TypeSpec returnTypeSpec = ModelVector<RealPos>::getClassTypeSpec();
-    
-    return returnTypeSpec;
+    return f_name;
 }
 
 
-const TypeSpec& Func_powerVector::getTypeSpec( void ) const {
+const TypeSpec& Func_powerVector::getTypeSpec( void ) const
+{
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }

@@ -15,32 +15,48 @@
 #ifndef TreeUtilities_H
 #define TreeUtilities_H
 
-#include "AdmixtureTree.h"
-#include "BranchLengthTree.h"
-#include "TimeTree.h"
+#include "DistanceMatrix.h"
+#include "MatrixReal.h"
+#include "Tree.h"
 #include "Tree.h"
 #include "TopologyNode.h"
 #include <string>
 #include <vector>
+
+#include <boost/unordered_set.hpp>
+
 
 namespace RevBayesCore {
 
     namespace TreeUtilities {
     
         // these function are for public use
-        TimeTree*       convertTree(const Tree &t);
-        AdmixtureTree*  convertToAdmixtureTree(const Tree &t, std::vector<std::string> names); // , const std::vector<std::string> names);
-        void            rescaleSubtree(TimeTree *t, TopologyNode *n, double factor);
-        void            rescaleTree(TimeTree *t, TopologyNode *n, double factor);
+        Tree*           convertTree(const Tree &t);
+//        AdmixtureTree*  convertToAdmixtureTree(const Tree &t, std::vector<std::string> names); // , const std::vector<std::string> names);
+        DistanceMatrix* getDistanceMatrix(const Tree& tree);
+        void            getOldestTip(Tree* t, TopologyNode *n, double& oldest);
+        void            getTaxaInSubtree(TopologyNode *n, std::vector<TopologyNode*> &taxa );
+        void            rescaleSubtree(Tree *t, TopologyNode *n, double factor, bool v=false);
+        void            rescaleTree(Tree *t, TopologyNode *n, double factor);
         std::string     uniqueNewickTopology(const Tree &t);
     
         // internal helper functions
         void            constructTimeTreeRecursively(TopologyNode *tn, const TopologyNode &n, std::vector<TopologyNode*> &nodes, std::vector<double> &ages, double depth);
-        void            constructAdmixtureTreeRecursively(AdmixtureNode *tn, const TopologyNode &n, std::vector<AdmixtureNode*> &nodes, std::vector<double> &ages);
+//        void            constructAdmixtureTreeRecursively(AdmixtureNode *tn, const TopologyNode &n, std::vector<AdmixtureNode*> &nodes, std::vector<double> &ages);
         std::string     uniqueNewickTopologyRecursive(const TopologyNode &n);
+		
+		
+		void            processDistsInSubtree(const TopologyNode& node, MatrixReal& matrix, std::vector< std::pair<std::string, double> >& distsToNodeFather, const std::map< std::string, int >& namesToId);
+        void            climbUpTheTree(const TopologyNode& node, boost::unordered_set <const TopologyNode* >& pathFromNodeToRoot) ;
+        double          getAgeOfMRCARecursive(const TopologyNode& node, boost::unordered_set <const TopologyNode* >& pathFromOtherNodeToRoot) ;
+        double          getAgeOfMRCA(const Tree &t, std::string first, std::string second) ;
+
+
+
 
     }
     
 }
+
 
 #endif

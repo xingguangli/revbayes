@@ -84,13 +84,9 @@ SyntaxVariableDecl* SyntaxVariableDecl::clone() const
  * Here we evaluate the length specification (statically) and create the
  * requested variable.
  *
- * @todo Resize the container to the lengths specification
  */
-RevPtr<Variable> SyntaxVariableDecl::evaluateContent( Environment& env, bool dynamic )
+RevPtr<RevVariable> SyntaxVariableDecl::evaluateContent( Environment& env, bool dynamic )
 {
-#ifdef DEBUG_PARSER
-    printf( "Evaluating variable declaration\n" );
-#endif
     
     // Check if variable exists
     if ( env.existsVariable( variableName ) )
@@ -110,11 +106,11 @@ RevPtr<Variable> SyntaxVariableDecl::evaluateContent( Environment& env, bool dyn
         }
         else
         {
-            RevPtr<Variable> temp    = (*it)->evaluateContent( env, dynamic );
+            RevPtr<RevVariable> temp    = (*it)->evaluateContent( env, dynamic );
             const RevObject& value   = temp->getRevObject();
             
             size_t theLength;
-            if ( value.isTypeSpec( Natural::getClassTypeSpec() ) )
+            if ( value.isType( Natural::getClassTypeSpec() ) )
                 theLength = size_t( static_cast<const Natural&>( value ).getValue() );
             else if ( value.isConvertibleTo( Natural::getClassTypeSpec(), true ) )
             {
@@ -143,8 +139,8 @@ RevPtr<Variable> SyntaxVariableDecl::evaluateContent( Environment& env, bool dyn
 //        static_cast<Container*>( newObject )->resize( lengths );
     }
 
-    // Add the new variable
-    env.addVariable( variableName, new Variable( newObject ) );
+    // Add the new RevVariable
+    env.addVariable( variableName, new RevVariable( newObject ) );
     
     return NULL;
 }
@@ -159,20 +155,6 @@ bool SyntaxVariableDecl::isFunctionSafe( const Environment& env, std::set<std::s
 {
     localVars.insert( variableName );
     return true;
-}
-
-
-/** Print info about the syntax element */
-void SyntaxVariableDecl::printValue(std::ostream& o) const
-{
-    o << "SyntaxVariableDecl: " << elementTypeName;
-    for ( std::list<SyntaxElement*>::const_iterator it = lengthExpr->begin(); it != lengthExpr->end(); ++it )
-    {
-        if ( (*it) == NULL )
-            o << "[]";
-        else
-            o << "[<expr>]";
-    }
 }
 
 

@@ -1,11 +1,3 @@
-//
-//  Func_exp.cpp
-//  RevBayesCore
-//
-//  Created by Sebastian Hoehna on 8/7/12.
-//  Copyright 2012 __MyCompanyName__. All rights reserved.
-//
-
 #include "LogFunction.h"
 #include "Func_log.h"
 #include "Real.h"
@@ -16,78 +8,89 @@
 using namespace RevLanguage;
 
 /** default constructor */
-Func_log::Func_log( void ) : Function( ) {
+Func_log::Func_log( void ) : TypedFunction<Real>( ) {
     
 }
 
 
-/** Clone object */
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'b'.
+ *
+ * \return A new copy of the process.
+ */
 Func_log* Func_log::clone( void ) const {
     
     return new Func_log( *this );
 }
 
 
-RevPtr<Variable> Func_log::execute() {
+RevBayesCore::TypedFunction<double>* Func_log::createFunction( void ) const
+{
     
     RevBayesCore::TypedDagNode<double>* a = static_cast<const RealPos &>( this->args[0].getVariable()->getRevObject() ).getDagNode();
     RevBayesCore::TypedDagNode<double>* b = static_cast<const RealPos &>( this->args[1].getVariable()->getRevObject() ).getDagNode();
     RevBayesCore::LogFunction* f = new RevBayesCore::LogFunction( a, b );
     
-    DeterministicNode<double> *detNode = new DeterministicNode<double>("", f, this->clone());
-    
-    Real* value = new Real( detNode );
-    
-    return new Variable( value );
+    return f;
 }
 
 
 /* Get argument rules */
-const ArgumentRules& Func_log::getArgumentRules( void ) const {
+const ArgumentRules& Func_log::getArgumentRules( void ) const
+{
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet ) {
+    if ( !rules_set )
+    {
         
-        argumentRules.push_back( new ArgumentRule( "x"   , RealPos::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        argumentRules.push_back( new ArgumentRule( "base", RealPos::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
+        argumentRules.push_back( new ArgumentRule( "x"   , RealPos::getClassTypeSpec(), "A positive number.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        argumentRules.push_back( new ArgumentRule( "base", RealPos::getClassTypeSpec(), "The base of the logarithm.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
         
-        rulesSet = true;
+        rules_set = true;
     }
     
     return argumentRules;
 }
 
 
-const std::string& Func_log::getClassType(void) { 
+const std::string& Func_log::getClassType(void)
+{
     
     static std::string revType = "Func_log";
     
 	return revType; 
 }
 
+
 /* Get class type spec describing type of object */
-const TypeSpec& Func_log::getClassTypeSpec(void) { 
+const TypeSpec& Func_log::getClassTypeSpec(void)
+{
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 
-/* Get return type */
-const TypeSpec& Func_log::getReturnType( void ) const {
+/**
+ * Get the primary Rev name for this function.
+ */
+std::string Func_log::getFunctionName( void ) const
+{
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "log";
     
-    static TypeSpec returnTypeSpec = Real::getClassTypeSpec();
-    
-    return returnTypeSpec;
+    return f_name;
 }
 
 
-const TypeSpec& Func_log::getTypeSpec( void ) const {
+const TypeSpec& Func_log::getTypeSpec( void ) const
+{
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }

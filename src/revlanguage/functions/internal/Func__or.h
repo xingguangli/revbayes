@@ -17,29 +17,29 @@
 #ifndef Func__or_H
 #define Func__or_H
 
-#include "RlFunction.h"
-#include <map>
+#include "RlBoolean.h"
+#include "RlTypedFunction.h"
+
 #include <string>
 
 namespace RevLanguage {
     
-    class Func__or : public Function {
+    class Func__or : public TypedFunction<RlBoolean> {
         
     public:
         Func__or();
         
         // Basic utility functions
-        Func__or*                   clone(void) const;                                          //!< Clone the object
-        static const std::string&   getClassType(void);                                         //!< Get Rev type
-        static const TypeSpec&      getClassTypeSpec(void);                                     //!< Get class type spec
-        const TypeSpec&             getTypeSpec(void) const;                                    //!< Get language type of the object
-        
+        Func__or*                                               clone(void) const;                                          //!< Clone the object
+        static const std::string&                               getClassType(void);                                         //!< Get Rev type
+        static const TypeSpec&                                  getClassTypeSpec(void);                                     //!< Get class type spec
+        std::string                                             getFunctionName(void) const;                                //!< Get the primary name of the function in Rev
+        const TypeSpec&                                         getTypeSpec(void) const;                                    //!< Get language type of the object
+        bool                                                    isInternal(void) const { return true; }                     //!< Is this an internal function?
+
         // Regular functions
-        const ArgumentRules&        getArgumentRules(void) const;                               //!< Get argument rules
-        const TypeSpec&             getReturnType(void) const;                                  //!< Get type of return value
-        
-        
-        RevPtr<Variable>            execute(void);                                              //!< Execute function
+        RevBayesCore::TypedFunction<RevBayesCore::Boolean>*     createFunction(void) const;                                                     //!< Create internal function object
+        const ArgumentRules&                                    getArgumentRules(void) const;                               //!< Get argument rules
         
     };
     

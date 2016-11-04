@@ -1,13 +1,18 @@
 #include "ConstantNode.h"
+//#include "DiscreteCharacterState.h"
 #include "RlBoolean.h"
 #include "Natural.h"
 #include "Integer.h"
+#include "Probability.h"
 #include "RealPos.h"
 #include "Real.h"
 #include "RbException.h"
 #include "RbUtil.h"
+#include "RlDiscreteCharacterState.h"
 #include "RlString.h"
+#include "StandardState.h"
 #include "TypeSpec.h"
+
 #include <climits>
 #include <sstream>
 #include <climits>
@@ -15,14 +20,16 @@
 using namespace RevLanguage;
 
 /** Default constructor */
-Natural::Natural( void ) : Integer( 0 ) {
+Natural::Natural( void ) : Integer( 0 )
+{
 
     setGuiVariableName("Natural Number");
     setGuiLatexSymbol("N");
 }
 
 
-Natural::Natural( RevBayesCore::TypedDagNode<int> *v ) : Integer( v ) {
+Natural::Natural( RevBayesCore::TypedDagNode<int> *v ) : Integer( v )
+{
     
     setGuiVariableName("Natural Number");
     setGuiLatexSymbol("N");
@@ -30,17 +37,22 @@ Natural::Natural( RevBayesCore::TypedDagNode<int> *v ) : Integer( v ) {
 
 
 /** Construct from int */
-Natural::Natural( int x ) : Integer( x ) {
+Natural::Natural( int x ) : Integer( x )
+{
 
     setGuiVariableName("Natural Number");
     setGuiLatexSymbol("N");
     if ( x < 0 )
+    {
         throw RbException( "Negative value for " + getClassType() );
+    }
+    
 }
 
 
 /* Construct from unsigned int */
-Natural::Natural( unsigned int x ) : Integer( x ) {
+Natural::Natural( unsigned int x ) : Integer( x )
+{
         
     setGuiVariableName("Natural Number");
     setGuiLatexSymbol("N");
@@ -48,12 +60,15 @@ Natural::Natural( unsigned int x ) : Integer( x ) {
 
 
 /* Construct from unsigned long */
-Natural::Natural( unsigned long x) : Integer( int(x) ) {
+Natural::Natural( unsigned long x) : Integer( int(x) )
+{
 
     setGuiVariableName("Natural Number");
     setGuiLatexSymbol("N");
     if ( x > INT_MAX )
+    {
         throw RbException( "Value out of range for " + getClassType() );
+    }
 
 }
 
@@ -70,10 +85,14 @@ RevObject* Natural::add( const RevObject& rhs ) const
 {
     
     if ( rhs.getTypeSpec().isDerivedOf( Natural::getClassTypeSpec() ) )
+    {
         return add( static_cast<const Natural&>( rhs ) );
+    }
     
     if ( rhs.getTypeSpec().isDerivedOf( RealPos::getClassTypeSpec() ) )
+    {
         return add( static_cast<const RealPos&>( rhs ) );
+    }
     
     return Integer::add( rhs );
 }
@@ -113,30 +132,57 @@ RealPos* Natural::add(const RevLanguage::RealPos &rhs) const
 }
 
 
-/** Clone object */
-Natural* Natural::clone( void ) const {
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'b'.
+ *
+ * \return A new copy of the process.
+ */
+Natural* Natural::clone( void ) const
+{
 
 	return new Natural( *this );
 }
 
 
 /** Convert to type. The caller manages the returned object. */
-RevObject* Natural::convertTo( const TypeSpec& type ) const {
+RevObject* Natural::convertTo( const TypeSpec& type ) const
+{
 
     if ( type == RlBoolean::getClassTypeSpec() )
+    {
         return new RlBoolean( dagNode->getValue() == 0 );
-
+    }
+    
     if ( type == Real::getClassTypeSpec() )
+    {
         return new Real( dagNode->getValue() );
-
+    }
+    
     if ( type == RealPos::getClassTypeSpec() )
+    {
         return new RealPos( dagNode->getValue() );
+    }
+    
+    if ( type == Probability::getClassTypeSpec() )
+    {
+        return new Probability( dagNode->getValue() );
+    }
 
-    if ( type == RlString::getClassTypeSpec() ) {
+    if ( type == RlString::getClassTypeSpec() )
+    {
 
         std::ostringstream o;
-        printValue( o );
+        printValue( o, true );
         return new RlString( o.str() );
+    }
+    
+    if ( type == getClassTypeSpec() )
+    {
+        
+        std::ostringstream o;
+        printValue( o, true );
+        return new DiscreteCharacterState( RevBayesCore::StandardState( o.str() ) );
     }
 
     return Integer::convertTo( type );
@@ -155,10 +201,14 @@ RevObject* Natural::divide( const RevObject& rhs ) const
 {
     
     if ( rhs.getTypeSpec().isDerivedOf( Natural::getClassTypeSpec() ) )
+    {
         return divide( static_cast<const Natural&>( rhs ) );
+    }
     
     if ( rhs.getTypeSpec().isDerivedOf( RealPos::getClassTypeSpec() ) )
+    {
         return divide( static_cast<const RealPos&>( rhs ) );
+    }
     
     return Integer::divide( rhs );
 }
@@ -199,7 +249,8 @@ RealPos* Natural::divide(const RevLanguage::RealPos &rhs) const
 
 
 /** Get Rev type of object */
-const std::string& Natural::getClassType(void) { 
+const std::string& Natural::getClassType(void)
+{
     
     static std::string revType = "Natural";
     
@@ -207,38 +258,59 @@ const std::string& Natural::getClassType(void) {
 }
 
 /** Get class type spec describing type of object */
-const TypeSpec& Natural::getClassTypeSpec(void) { 
+const TypeSpec& Natural::getClassTypeSpec(void)
+{
     
-    static TypeSpec revTypeSpec = TypeSpec( getClassType(), new TypeSpec( Integer::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( getClassType(), new TypeSpec( Integer::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 
 /** Get type spec */
-const TypeSpec& Natural::getTypeSpec( void ) const {
+const TypeSpec& Natural::getTypeSpec( void ) const
+{
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }
 
 
 /** Is convertible to type? */
-bool Natural::isConvertibleTo( const TypeSpec& type, bool once ) const {
+double Natural::isConvertibleTo( const TypeSpec& type, bool once ) const
+{
 
     if ( type == RlBoolean::getClassTypeSpec() )
-        return true;
-
+    {
+        return 0.5;
+    }
+    
     if ( type == Real::getClassTypeSpec() )
-        return true;
-
+    {
+        return 0.3;
+    }
+    
     if ( type == RealPos::getClassTypeSpec() )
-        return true;
-
+    {
+        return 0.2;
+    }
+    
+    if ( once == true && type == Probability::getClassTypeSpec() && dagNode->getValue() <= 1 )
+    {
+        return 0.1;
+    }
+    
     if ( type == RlString::getClassTypeSpec() )
-        return true;
-
+    {
+        return 0.6;
+    }
+    
+    if ( type == getClassTypeSpec() )
+    {
+        return 0.7;
+    }
+    
     return Integer::isConvertibleTo( type, once );
 }
 

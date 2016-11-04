@@ -26,7 +26,7 @@
 namespace RevLanguage {
 
 template <typename firstValType, typename secondValType, typename retType>
-class Func__add :  public TypedFunction<retType> {
+class Func__add : public TypedFunction<retType> {
     
 public:
     Func__add( void );
@@ -35,13 +35,14 @@ public:
     Func__add*                                                      clone(void) const;                              //!< Clone the object
     static const std::string&                                       getClassType(void);                             //!< Get class name
     static const TypeSpec&                                          getClassTypeSpec(void);                         //!< Get class type spec
+    std::string                                                     getFunctionName(void) const;                    //!< Get the primary name of the function in Rev
     const TypeSpec&                                                 getTypeSpec(void) const;                        //!< Get the type spec of the instance
+    bool                                                            isInternal(void) const { return true; }         //!< Is this an internal function?
 
     // Implementations of pure virtual functions of the base class(es)
-    RevBayesCore::TypedFunction<typename retType::valueType>*       createFunction(void) const ;                    //!< Create a random variable from this distribution
+    RevBayesCore::TypedFunction<typename retType::valueType>*       createFunction(void) const ;                    //!< Create a new internal function object
     const ArgumentRules&                                            getArgumentRules(void) const;                   //!< Get argument rules
-    const TypeSpec&                                                 getReturnType(void) const;                      //!< Get type of return value
-
+    
 private:
         
 };
@@ -61,7 +62,12 @@ RevLanguage::Func__add<firstValType, secondValType, retType>::Func__add( void ) 
 }
 
 
-/** Clone object */
+/**
+ * The clone function is a convenience function to create proper copies of inherited objected.
+ * E.g. a.clone() will create a clone of the correct type even if 'a' is of derived type 'b'.
+ *
+ * \return A new copy of the process.
+ */
 template <typename firstValType, typename secondValType, typename retType>
 RevLanguage::Func__add<firstValType, secondValType, retType>* RevLanguage::Func__add<firstValType, secondValType, retType>::clone( void ) const
 {
@@ -87,14 +93,14 @@ const RevLanguage::ArgumentRules& RevLanguage::Func__add<firstValType, secondVal
 {
     
     static ArgumentRules argumentRules = ArgumentRules();
-    static bool          rulesSet = false;
+    static bool          rules_set = false;
     
-    if ( !rulesSet )
+    if ( !rules_set )
     {
         
-        argumentRules.push_back( new ArgumentRule( "first" , firstValType::getClassTypeSpec() , ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        argumentRules.push_back( new ArgumentRule( "second", secondValType::getClassTypeSpec(), ArgumentRule::BY_CONSTANT_REFERENCE ) );
-        rulesSet = true;
+        argumentRules.push_back( new ArgumentRule( "first" , firstValType::getClassTypeSpec() , "The left hand side variable.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        argumentRules.push_back( new ArgumentRule( "second", secondValType::getClassTypeSpec(), "The right hand side variable.", ArgumentRule::BY_CONSTANT_REFERENCE, ArgumentRule::ANY ) );
+        rules_set = true;
     }
     
     return argumentRules;
@@ -109,25 +115,28 @@ const std::string& RevLanguage::Func__add<firstValType, secondValType, retType>:
 	return revType; 
 }
 
+
 /* Get class type spec describing type of object */
 template <typename firstValType, typename secondValType, typename retType>
 const RevLanguage::TypeSpec& RevLanguage::Func__add<firstValType, secondValType, retType>::getClassTypeSpec(void)
 {
     
-    static TypeSpec revTypeSpec = TypeSpec( Func__add<firstValType, secondValType, retType>::getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
+    static TypeSpec rev_type_spec = TypeSpec( Func__add<firstValType, secondValType, retType>::getClassType(), new TypeSpec( Function::getClassTypeSpec() ) );
     
-	return revTypeSpec; 
+	return rev_type_spec; 
 }
 
 
-/* Get return type */
+/**
+ * Get the primary Rev name for this function.
+ */
 template <typename firstValType, typename secondValType, typename retType>
-const RevLanguage::TypeSpec& RevLanguage::Func__add<firstValType, secondValType, retType>::getReturnType( void ) const
+std::string RevLanguage::Func__add<firstValType, secondValType, retType>::getFunctionName( void ) const
 {
+    // create a name variable that is the same for all instance of this class
+    std::string f_name = "add";
     
-    static TypeSpec returnTypeSpec = retType::getClassTypeSpec();
-    
-    return returnTypeSpec;
+    return f_name;
 }
 
 
@@ -135,9 +144,9 @@ template <typename firstValType, typename secondValType, typename retType>
 const RevLanguage::TypeSpec& RevLanguage::Func__add<firstValType, secondValType, retType>::getTypeSpec( void ) const
 {
     
-    static TypeSpec typeSpec = getClassTypeSpec();
+    static TypeSpec type_spec = getClassTypeSpec();
     
-    return typeSpec;
+    return type_spec;
 }
 
 #endif

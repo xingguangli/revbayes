@@ -48,11 +48,8 @@ SyntaxMultiplicationAssignment* SyntaxMultiplicationAssignment::clone () const
  * Evaluate the content of this syntax element. This will perform
  * a multiplication assignment operation.
  */
-void SyntaxMultiplicationAssignment::assign(RevPtr<Variable> &lhs, RevPtr<Variable> &rhs)
+void SyntaxMultiplicationAssignment::assign(RevPtr<RevVariable> &lhs, RevPtr<RevVariable> &rhs)
 {
-#ifdef DEBUG_PARSER
-    printf( "Evaluating multiplication assignment\n" );
-#endif
     
     // Get variable from lhs. We use standard evaluation because the variable is
     // implicitly on both sides (lhs and rhs) of this type of statement
@@ -85,8 +82,8 @@ void SyntaxMultiplicationAssignment::assign(RevPtr<Variable> &lhs, RevPtr<Variab
     // Generate result of the multiplication
     RevObject *newValue = lhs_value.multiply( rhs_value );
     
-    // Fill the slot with the new variable
-    lhs->setRevObject( newValue );
+    // Fill the slot with the new RevVariable
+    lhs->replaceRevObject( newValue );
     
     // Reset it as workspace (control) variable, if it was a workspace (control) variable before the assignment.
     // When we fill the slot, the workspace (control) variable property is reset to false by default.
@@ -95,9 +92,6 @@ void SyntaxMultiplicationAssignment::assign(RevPtr<Variable> &lhs, RevPtr<Variab
         lhs->setWorkspaceVariableState( true );
     }
     
-#ifdef DEBUG_PARSER
-    env.printValue(std::cerr);
-#endif
 }
 
 

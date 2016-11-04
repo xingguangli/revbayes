@@ -3,6 +3,7 @@
 #include "RandomNumberFactory.h"
 #include "RandomNumberGenerator.h"
 #include "RbConstants.h"
+#include "RbMathLogic.h"
 
 #include <algorithm>
 #include <cmath>
@@ -13,7 +14,6 @@ using namespace RevBayesCore;
  * Constructor. 
  * We delegate most parameters to the base class and initialize the members.
  *
- * \param[in]    o              Time of the origin/present/length of the process.
  * \param[in]    s              Speciation rates.
  * \param[in]    st             Speciation rate-change times.
  * \param[in]    e              Extinction rates.
@@ -28,12 +28,12 @@ using namespace RevBayesCore;
  */
 PiecewiseConstantFossilizedBirthDeathProcess::PiecewiseConstantFossilizedBirthDeathProcess
 (
- const TypedDagNode<double> *o, const TypedDagNode<double> *ra,
+ const TypedDagNode<double> *ra,
  const TypedDagNode< RbVector<double> > *s, const TypedDagNode< RbVector<double> > *st,
  const TypedDagNode< RbVector<double> > *e, const TypedDagNode< RbVector<double> > *et,
  const TypedDagNode< RbVector<double> > *p, const TypedDagNode< RbVector<double> > *pt,
  const TypedDagNode< RbVector<double> > *r, const TypedDagNode< RbVector<double> > *rt,
- const std::string &cdt, const std::vector<Taxon> &tn, const std::vector<Clade> &c ): AbstractBirthDeathProcess( o, ra, cdt, tn, c ),
+ const std::string &cdt, const std::vector<Taxon> &tn ): AbstractBirthDeathProcess( ra, cdt, tn ),
     lambda( s ), 
     lambdaTimes( st ), 
     mu( e ), 
@@ -43,6 +43,15 @@ PiecewiseConstantFossilizedBirthDeathProcess::PiecewiseConstantFossilizedBirthDe
     rho( r ),
     rhoTimes( rt )
 {
+    addParameter( lambda );
+    addParameter( lambdaTimes );
+    addParameter( mu );
+    addParameter( muTimes );
+    addParameter( psi );
+    addParameter( psiTimes );
+    addParameter( rho );
+    addParameter( rhoTimes );
+    
     simulateTree();
 }
 
@@ -70,19 +79,17 @@ double PiecewiseConstantFossilizedBirthDeathProcess::computeLnProbabilityTimes( 
     double lnProbTimes = 0;
     
     // present time 
-    double org = origin->getValue();
+    double org = root_age->getValue();
     
     // retrieved the speciation times
     std::vector<double>* agesInts  = getAgesOfInternalNodesFromMostRecentSample();
     std::vector<double>* agesTips  = getAgesOfTipsFromMostRecentSample();
     
-    // numTaxa == tips.size() + ancs.size()
+    // num_taxa == tips.size() + ancs.size()
     // for the tip ages
     for (size_t i = 0; i < (*agesTips).size(); ++i)
     {
-        if (lnProbTimes == RbConstants::Double::nan ||
-            lnProbTimes == RbConstants::Double::inf || 
-            lnProbTimes == RbConstants::Double::neginf)
+        if ( RbMath::isFinite(lnProbTimes) == false )
         {
             return RbConstants::Double::nan;
         }
@@ -104,9 +111,7 @@ double PiecewiseConstantFossilizedBirthDeathProcess::computeLnProbabilityTimes( 
     // for the internal node ages
     for (size_t i = 0; i < (*agesTips).size() -1; ++i)
     {
-        if (lnProbTimes == RbConstants::Double::nan ||
-            lnProbTimes == RbConstants::Double::inf || 
-            lnProbTimes == RbConstants::Double::neginf) 
+        if ( RbMath::isFinite(lnProbTimes) == false )
         {
             return RbConstants::Double::nan;
         }
@@ -120,9 +125,7 @@ double PiecewiseConstantFossilizedBirthDeathProcess::computeLnProbabilityTimes( 
     // TODO: currently use agesTips to compile, will change to agesAncs!!
     for (size_t i = 0; i < (*agesTips).size(); ++i)
     {
-        if (lnProbTimes == RbConstants::Double::nan ||
-            lnProbTimes == RbConstants::Double::inf ||
-            lnProbTimes == RbConstants::Double::neginf)
+        if ( RbMath::isFinite(lnProbTimes) == false )
         {
             return RbConstants::Double::nan;
         }
@@ -142,9 +145,7 @@ double PiecewiseConstantFossilizedBirthDeathProcess::computeLnProbabilityTimes( 
     // for the degree-two vertices
     for (size_t i = 0; i < rateChangeTimes.size(); ++i)
     {
-        if (lnProbTimes == RbConstants::Double::nan ||
-            lnProbTimes == RbConstants::Double::inf || 
-            lnProbTimes == RbConstants::Double::neginf)
+        if ( RbMath::isFinite(lnProbTimes) == false )
         {
             return RbConstants::Double::nan;
         }
@@ -383,22 +384,28 @@ double PiecewiseConstantFossilizedBirthDeathProcess::q( size_t i, double t ) con
 /**
  * Simulate new speciation times.
  */
-std::vector<double>* PiecewiseConstantFossilizedBirthDeathProcess::simSpeciations(size_t n, double origin) const
+double PiecewiseConstantFossilizedBirthDeathProcess::simulateDivergenceTime(double origin, double present) const
 {
     
+    
     // Get the rng
-    // RandomNumberGenerator* rng = GLOBAL_RNG;
+    RandomNumberGenerator* rng = GLOBAL_RNG;
     
     // get the parameters
+    double age = present - origin;
+    double b = lambda->getValue()[0];
+    double d = mu->getValue()[0];
+    double rho = 1.0;
     
-    std::vector<double> *times = new std::vector<double>(n,0.0);
-    for (size_t i = 0; i < n; i++ )
-    {
-        // draw the times
-        times->push_back( n );
-    }
-	
-    return times;
+    
+    // get a random draw
+    double u = rng->uniform01();
+    
+    // compute the time for this draw
+    double t = ( log( ( (b-d) / (1 - (u)*(1-((b-d)*exp((d-b)*age))/(rho*b+(b*(1-rho)-d)*exp((d-b)*age) ) ) ) - (b*(1-rho)-d) ) / (rho * b) ) + (d-b)*age )  /  (d-b);
+    
+    
+    return present - t;
 }
 
 
@@ -431,32 +438,13 @@ int PiecewiseConstantFossilizedBirthDeathProcess::survivors(double t) const
 }
 
 
-/** Get the parameters of the distribution */
-std::set<const DagNode*> PiecewiseConstantFossilizedBirthDeathProcess::getParameters( void ) const
-{
-    std::set<const DagNode*> parameters = AbstractBirthDeathProcess::getParameters();
-    
-    parameters.insert( lambdaTimes );
-    parameters.insert( muTimes );
-    parameters.insert( psiTimes );
-    parameters.insert( rhoTimes );
-    parameters.insert( lambda );
-    parameters.insert( mu );
-    parameters.insert( psi );
-    parameters.insert( rho );
-    
-    parameters.erase( NULL );
-    return parameters;
-}
-
-
 /**
  * Swap the parameters held by this distribution.
  * 
  * \param[in]    oldP      Pointer to the old parameter.
  * \param[in]    newP      Pointer to the new parameter.
  */
-void PiecewiseConstantFossilizedBirthDeathProcess::swapParameter(const DagNode *oldP, const DagNode *newP) 
+void PiecewiseConstantFossilizedBirthDeathProcess::swapParameterInternal(const DagNode *oldP, const DagNode *newP)
 {
     bool found = false;
     
@@ -500,6 +488,6 @@ void PiecewiseConstantFossilizedBirthDeathProcess::swapParameter(const DagNode *
     else if (!found)
     {
         // delegate the super-class
-        AbstractBirthDeathProcess::swapParameter(oldP, newP);
+        AbstractBirthDeathProcess::swapParameterInternal(oldP, newP);
     }
 }

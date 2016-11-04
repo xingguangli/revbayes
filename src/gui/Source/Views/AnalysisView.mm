@@ -41,8 +41,8 @@
 
 - (NSPoint)centerPointBetweenPoint:(NSPoint)p1 andPoint:(NSPoint)p2 {
     
-    float h = fabsf(p1.x - p2.x) * 0.5;
-    float v = fabsf(p1.y - p2.y) * 0.5;
+    float h = fabsf( (float)(p1.x - p2.x) ) * 0.5;
+    float v = fabsf( (float)(p1.y - p2.y) ) * 0.5;
     
     NSPoint cp;
     if (p1.x < p2.x)
@@ -310,7 +310,8 @@
 					endingRangeRange.location += 11;
 					[attrString applyFontTraits:NSItalicFontMask range:endingRangeRange];
 					}
-				NSRect textSize = [attrString boundingRectWithSize:NSMakeSize(1e10, 1e10) options:nil];
+				NSRect textSize = [attrString boundingRectWithSize:NSMakeSize(1e10, 1e10) options:NSStringDrawingUsesLineFragmentOrigin];
+//				NSRect textSize = [attrString boundingRectWithSize:NSMakeSize(1e10, 1e10) options:NSStringDrawingUsesDeviceMetrics];
 				float padding = 4.0 * scaleFactor;
 				textSize.origin.x = pr.origin.x + (pr.size.width - textSize.size.width - padding);
 				textSize.origin.y = pr.origin.y + padding;
@@ -437,7 +438,7 @@
 				}
             }
             
-#if 1
+#if 0
         if ([[element className] isEqualToString:@"ToolParsimony"] == YES)
             {
             if ( [element numTreesVisited] > 0 )
@@ -710,8 +711,8 @@
     NSPoint p1 = NSMakePoint( NSMidX(r), NSMidY(r) );
 
     float d = [self distanceFromPoint:p1 toPoint:p2];
-    float absBX = fabsf(p1.x-p2.x);
-    float absBY = fabsf(p1.y-p2.y);
+    float absBX = fabsf( (float)(p1.x-p2.x) );
+    float absBY = fabsf( (float)(p1.y-p2.y) );
     float dV = r.size.height*0.5 * d / absBY;
     float dH = r.size.width*0.5 * d / absBX;
     NSPoint closestPt = NSZeroPoint;
@@ -1866,30 +1867,24 @@
 				// inform the user of certain errors
 				if (sameInOutType == YES)
 					{
-					NSAlert* alert = [NSAlert alertWithMessageText:@"Tool Connection Warning" 
-													 defaultButton:@"OK" 
-												   alternateButton:nil 
-													   otherButton:nil 
-										 informativeTextWithFormat:@"You must connect outlets to inlets."];
-					[alert beginSheetModalForWindow:[self window] modalDelegate:self didEndSelector:nil contextInfo:NULL];
-					}
+                    NSAlert* alert = [[NSAlert alloc] init];
+                    [alert setMessageText:@"Warning: Incorrect Tool Connection"];
+                    [alert setInformativeText:@"You must connect outlets to inlets."];
+                    [alert beginSheetModalForWindow:[self window] completionHandler:nil];
+                    }
 				else if (sameColor == NO)
 					{
-					NSAlert* alert = [NSAlert alertWithMessageText:@"Tool Connection Warning" 
-													 defaultButton:@"OK" 
-												   alternateButton:nil 
-													   otherButton:nil 
-										 informativeTextWithFormat:@"You must connect outlets with inlets of the same color."];
-					[alert beginSheetModalForWindow:[self window] modalDelegate:self didEndSelector:nil contextInfo:NULL];
+                    NSAlert* alert = [[NSAlert alloc] init];
+                    [alert setMessageText:@"Warning: Incorrect Tool Connection"];
+                    [alert setInformativeText:@"You must connect outlets with inlets of the same color."];
+                    [alert beginSheetModalForWindow:[self window] completionHandler:nil];
 					}
 				else if (sameClassType == YES)
 					{
-					NSAlert* alert = [NSAlert alertWithMessageText:@"Tool Connection Warning" 
-													 defaultButton:@"OK" 
-												   alternateButton:nil 
-													   otherButton:nil 
-										 informativeTextWithFormat:@"You cannot connect tools of the same type."];
-					[alert beginSheetModalForWindow:[self window] modalDelegate:self didEndSelector:nil contextInfo:NULL];
+                    NSAlert* alert = [[NSAlert alloc] init];
+                    [alert setMessageText:@"Warning: Incorrect Tool Connection"];
+                    [alert setInformativeText:@"You cannot connect tools of the same type."];
+                    [alert beginSheetModalForWindow:[self window] completionHandler:nil];
 					}
 				}
 			[[NSCursor crosshairCursor] pop];

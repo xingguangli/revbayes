@@ -89,13 +89,14 @@ Parser& parser = Parser::getParser();
     RevLanguage::SyntaxLabeledExpr*                 syntaxLabeledExpr;
     RevLanguage::SyntaxFormal*                      syntaxFormal;
     std::list<RevLanguage::SyntaxElement*>*         syntaxElementList;
+    std::vector<std::string>*                       stringvector;
     std::list<RevLanguage::SyntaxLabeledExpr*>*     argumentList;
     std::list<RevLanguage::SyntaxFormal*>*          formalList;
 };
 
 /* Return types of the elements handled by the parser */
 %type <c_string> NAME STRING
-%type <realValue> REAL
+%type <realValue> REAL RBINF
 %type <intValue> INT RBNULL
 %type <boolValue> FALSE TRUE
 %type <string> RBTAB
@@ -115,13 +116,14 @@ Parser& parser = Parser::getParser();
 %type <syntaxElement> forCond cond returnStatement
 %type <syntaxElement> nextStatement breakStatement
 %type <syntaxElementList> elementList optElements
+%type <stringvector> namespaceList optNamespaces
 %type <syntaxElementList> stmts stmtList
 %type <syntaxElementList> memberDefs
 %type <argumentList> argumentList optArguments vectorList vector
 %type <formalList> formalList optFormals
 
 /* Tokens returned by the lexer and handled by the parser */
-%token REAL INT NAME STRING RBNULL RBTAB FALSE TRUE
+%token REAL INT NAME STRING RBNULL RBTAB FALSE TRUE RBINF
 %token FUNCTION PROCEDURE CLASS FOR IN IF ELSE WHILE NEXT BREAK RETURN
 %token MOD_CONST MOD_DYNAMIC MOD_STOCHASTIC MOD_DETERMINISTIC PROTECTED
 %token ARROW_ASSIGN TILDE_ASSIGN EQUATION_ASSIGN WORKSPACE_ASSIGN
@@ -500,6 +502,21 @@ variable    :   identifier optElements
                     delete $1;
                     delete $2;
                 }
+            |   identifier '$' identifier optNamespaces
+                {
+#ifdef DEBUG_BISON_FLEX
+                    printf("Parser inserting variable (NAMED_VAR) in syntax tree\n");
+#endif
+                    std::vector<std::string> names = std::vector<std::string>(1, *$1);
+                    delete $1;
+                    names.push_back(*$3);
+                    delete $3;
+                    names.insert(names.end(),$4->begin(),$4->end());
+                    delete $4;
+                    std::string varName = names.back();
+                    names.pop_back();
+                    $$ = new SyntaxVariable(varName, names);
+                }
             |   fxnCall '[' expression ']' optElements
                 {
 #ifdef DEBUG_BISON_FLEX
@@ -547,6 +564,14 @@ elementList :   '[' expression ']'              { $$ = new std::list<SyntaxEleme
             |   '[' ']'                         { $$ = new std::list<SyntaxElement*>(); }
             |   elementList '[' expression ']'  { $1->push_back($3); $$ = $1; }
             |   elementList '[' ']'             { $1->push_back( NULL ); $$ = $1; }
+            ;
+
+optNamespaces :   /* empty */                     { $$ = new std::vector<std::string>(); }
+            |   namespaceList                     { $$ = $1; }
+            ;
+
+namespaceList :   '$' identifier                { $$ = new std::vector<std::string>(1, *$2); delete $2; }
+            |   namespaceList '$' namespaceList { $1->insert($1->end(),$3->begin(),$3->end()); delete $3; $$ = $1; }
             ;
 
 fxnCall     :   identifier '(' optArguments ')'
@@ -810,52 +835,35 @@ vectorList  :   vectorList ',' expression   { $1->push_back(new SyntaxLabeledExp
 
 constant    :   FALSE
                 {
-#ifdef DEBUG_BISON_FLEX
-                    printf("Parser inserting bool constant (false) in syntax tree\n");
-#endif
                     $$ = new SyntaxConstant(new RlBoolean(false) );
                 }
             |   TRUE
                 {
-#ifdef DEBUG_BISON_FLEX
-                    printf("Parser inserting bool constant (true) in syntax tree\n");
-#endif
                     $$ = new SyntaxConstant(new RlBoolean(true) );
                 }
             |   RBNULL
                 {
-#ifdef DEBUG_BISON_FLEX
-                    printf("Parser inserting null constant in syntax tree\n");
-#endif
                     $$ = new SyntaxConstant( NULL );
                 }
             |   RBTAB
                 {
-#ifdef DEBUG_BISON_FLEX
-                    printf("Parser inserting 'tab' constant in syntax tree\n");
-#endif
                     $$ = new SyntaxConstant( new RlString("\t") );
+                }
+            |   RBINF
+                {
+                    $$ = new SyntaxConstant( new RealPos( RbConstants::Double::inf ) );
                 }
             |   INT
                 {
                     if ( $1 < 0 ) {
-#ifdef DEBUG_BISON_FLEX
-                        printf("Parser inserting Integer constant in syntax tree\n");
-#endif
                         $$ = new SyntaxConstant(new Integer($1) );
                     }
                     else { 
-#ifdef DEBUG_BISON_FLEX
-                        printf("Parser inserting Natural constant in syntax tree\n");
-#endif
                         $$ = new SyntaxConstant(new Natural($1) );
                     }
                 }
             |   STRING
                 {
-#ifdef DEBUG_BISON_FLEX
-                    printf("Parser inserting String constant in syntax tree\n");
-#endif
                     $$ = new SyntaxConstant(new RlString($1) );
                 }
             |   REAL

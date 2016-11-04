@@ -1,20 +1,3 @@
-/**
- * @file
- * This file contains the declaration of the Binomial distribution, which is used create
- * random variables of Bernoulli distributions.
- *
- * @brief Declaration and implementation of Dist_binomial
- *
- * (c) Copyright 2009- under GPL version 3
- * @date Last modified: $Date: 2012-04-20 04:06:14 +0200 (Fri, 20 Apr 2012) $
- * @author The RevBayes Development Core Team
- * @license GPL version 3
- * @version 1.0
- * @since Version 1.0, 2012-08-06
- *
- * $Id: Func__add.h 1406 2012-04-20 02:06:14Z hoehna $
- */
-
 #ifndef Dist_binomial_H
 #define Dist_binomial_H
 
@@ -25,6 +8,21 @@
 
 namespace RevLanguage {
     
+    /**
+     * The RevLanguage wrapper of the binomial distribution.
+     *
+     * The RevLanguage wrapper of the binomial distribution simply
+     * manages the interactions through the Rev with our core.
+     * That is, the internal distribution object can be constructed and hooked up
+     * in a model graph.
+     * See the BinomialDistribution for more details.
+     *
+     *
+     * @copyright Copyright 2009-
+     * @author The RevBayes Development Core Team (John Huelsenbeck)
+     * @since 2014-08-25, version 1.0
+     *
+     */
     class Dist_binomial :  public TypedDistribution<Natural> {
         
     public:
@@ -32,12 +30,13 @@ namespace RevLanguage {
         virtual                                        ~Dist_binomial(void);
         
         // Basic utility functions
-        Dist_binomial*                                  clone(void) const;                                                              //!< Clone the object
-        static const std::string&                       getClassType(void);                                                             //!< Get Rev type
-        static const TypeSpec&                          getClassTypeSpec(void);                                                         //!< Get class type spec
-        const TypeSpec&                                 getTypeSpec(void) const;                                                        //!< Get the type spec of the instance
-        const MemberRules&                              getParameterRules(void) const;                                                     //!< Get member rules (const)
-        void                                            printValue(std::ostream& o) const;                                              //!< Print the general information on the function ('usage')
+        Dist_binomial*                                  clone(void) const;                                                                      //!< Clone the object
+        static const std::string&                       getClassType(void);                                                                     //!< Get Rev type
+        static const TypeSpec&                          getClassTypeSpec(void);                                                                 //!< Get class type spec
+        std::string                                     getDistributionFunctionName(void) const;                                                //!< Get the Rev-name for this distribution.
+        const TypeSpec&                                 getTypeSpec(void) const;                                                                //!< Get the type spec of the instance
+        const MemberRules&                              getParameterRules(void) const;                                                          //!< Get member rules (const)
+        void                                            printValue(std::ostream& o) const;                                                      //!< Print the general information on the function ('usage')
         
         
         // Distribution functions you have to override
@@ -45,13 +44,21 @@ namespace RevLanguage {
         
     protected:
         
-        void                                            setConstParameter(const std::string& name, const RevPtr<const Variable> &var);     //!< Set member variable
+        std::vector<std::string>                        getHelpAuthor(void) const;                                                              //!< Get the author(s) of this function
+        std::vector<std::string>                        getHelpDescription(void) const;                                                         //!< Get the description for this function
+        std::vector<std::string>                        getHelpDetails(void) const;                                                             //!< Get the more detailed description of the function
+        std::string                                     getHelpExample(void) const;                                                             //!< Get an executable and instructive example
+        std::vector<RevBayesCore::RbHelpReference>      getHelpReferences(void) const;                                                          //!< Get some references/citations for this function
+        std::vector<std::string>                        getHelpSeeAlso(void) const;                                                             //!< Get suggested other functions
+        std::string                                     getHelpTitle(void) const;                                                               //!< Get the title of this help entry
+
+        void                                            setConstParameter(const std::string& name, const RevPtr<const RevVariable> &var);       //!< Set member variable
         
         
     private:
         
-        RevPtr<const Variable>                           p;
-        RevPtr<const Variable>                           n;
+        RevPtr<const RevVariable>                       p;
+        RevPtr<const RevVariable>                       n;
     };
     
 }
