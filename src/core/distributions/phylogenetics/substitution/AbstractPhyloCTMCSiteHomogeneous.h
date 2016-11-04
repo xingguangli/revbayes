@@ -2,8 +2,10 @@
 #define AbstractPhyloCTMCSiteHomogeneous_H
 
 #include "AbstractHomologousDiscreteCharacterData.h"
+#include "ConstantNode.h"
 #include "DiscreteTaxonData.h"
 #include "DnaState.h"
+#include "MemberObject.h"
 #include "RbMathLogic.h"
 #include "RbSettings.h"
 #include "RbVector.h"
@@ -14,8 +16,6 @@
 #include "Tree.h"
 #include "TreeChangeEventListener.h"
 #include "TypedDistribution.h"
-#include "TypedDagNode.h"
-#include "ConstantNode.h"
 
 #include <memory.h>
 
@@ -131,7 +131,7 @@ void computeTipNodeLikelihood(double * p_node,
      * @since 2012-06-17, version 1.0
      */
     template<class charType>
-    class AbstractPhyloCTMCSiteHomogeneous : public TypedDistribution< AbstractHomologousDiscreteCharacterData >, public TreeChangeEventListener {
+    class AbstractPhyloCTMCSiteHomogeneous : public TypedDistribution< AbstractHomologousDiscreteCharacterData >, public MemberObject< RbVector<double> >, public TreeChangeEventListener {
 
     public:
         // Note, we need the size of the alignment in the constructor to correctly simulate an initial state
@@ -148,15 +148,16 @@ void computeTipNodeLikelihood(double * p_node,
         virtual double                                                      computeLnProbability(void);
 		virtual std::vector<charType>										drawAncestralStatesForNode(const TopologyNode &n);
         virtual void                                                        drawJointConditionalAncestralStates(std::vector<std::vector<charType> >& startStates, std::vector<std::vector<charType> >& endStates);
-        virtual void                                                        recursivelyDrawJointConditionalAncestralStates(const TopologyNode &node, std::vector<std::vector<charType> >& startStates, std::vector<std::vector<charType> >& endStates, const std::vector<size_t>& sampledSiteRates);
-        virtual void                                                        tipDrawJointConditionalAncestralStates(const TopologyNode &node, std::vector<std::vector<charType> >& startStates, std::vector<std::vector<charType> >& endStates, const std::vector<size_t>& sampledSiteRates);
+        void                                                                executeMethod(const std::string &n, const std::vector<const DagNode*> &args, RbVector<double> &rv) const;     //!< Map the member methods to internal function calls
         void                                                                fireTreeChangeEvent(const TopologyNode &n);                                                 //!< The tree has changed and we want to know which part.
-        void																updateMarginalNodeLikelihoods(void);
-        void                                                                setMcmcMode(bool tf);                                                                       //!< Change the likelihood computation to or from MCMC mode.
-        void                                                                setValue(AbstractHomologousDiscreteCharacterData *v, bool f=false);                                   //!< Set the current value, e.g. attach an observation (clamp)
+        virtual void                                                        recursivelyDrawJointConditionalAncestralStates(const TopologyNode &node, std::vector<std::vector<charType> >& startStates, std::vector<std::vector<charType> >& endStates, const std::vector<size_t>& sampledSiteRates);
         virtual void                                                        redrawValue(void);
         void                                                                reInitialized(void);
-
+        void                                                                setMcmcMode(bool tf);                                                                       //!< Change the likelihood computation to or from MCMC mode.
+        void                                                                setValue(AbstractHomologousDiscreteCharacterData *v, bool f=false);                                   //!< Set the current value, e.g. attach an observation (clamp)
+        virtual void                                                        tipDrawJointConditionalAncestralStates(const TopologyNode &node, std::vector<std::vector<charType> >& startStates, std::vector<std::vector<charType> >& endStates, const std::vector<size_t>& sampledSiteRates);
+        void																updateMarginalNodeLikelihoods(void);
+        
         void                                                                setClockRate(const TypedDagNode< double > *r);
         void                                                                setClockRate(const TypedDagNode< RbVector< double > > *r);
         void                                                                setPInv(const TypedDagNode< double > *);
@@ -165,8 +166,7 @@ void computeTipNodeLikelihood(double * p_node,
         void                                                                setRootFrequencies(const TypedDagNode< RbVector< double > > *f);
         void                                                                setSiteRates(const TypedDagNode< RbVector< double > > *r);
         void                                                                setUseMarginalLikelihoods(bool tf);
-
-
+        
     protected:
         
         // helper method for this and derived classes
@@ -199,6 +199,7 @@ void computeTipNodeLikelihood(double * p_node,
         virtual void                                                        computeMarginalNodeLikelihood(size_t node_idx, size_t parentIdx);
         virtual void                                                        computeMarginalRootLikelihood();
         virtual std::vector< std::vector< double > >*                       sumMarginalLikelihoods(size_t node_index);
+        virtual void                                                        computeRootLikelihoods( std::vector< double > &rv ) const;
         virtual double                                                      sumRootLikelihood( void );
         virtual std::vector<size_t>                                         getIncludedSiteIndices();
 
@@ -801,10 +802,10 @@ double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::computeLnProbab
     const TopologyNode &root = tau->getValue().getRoot();
 
     // we start with the root and then traverse down the tree
-    size_t rootIndex = root.getIndex();
+    size_t root_index = root.getIndex();
 
     // only necessary if the root is actually dirty
-    if ( dirty_nodes[rootIndex] )
+    if ( dirty_nodes[root_index] == true )
     {
 
         // start by filling the likelihood vector for the children of the root
@@ -817,8 +818,8 @@ double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::computeLnProbab
             size_t right_index = right.getIndex();
             fillLikelihoodVector( right, right_index );
 
-            computeRootLikelihood( rootIndex, left_index, right_index );
-            scale(rootIndex, left_index, right_index);
+            computeRootLikelihood( root_index, left_index, right_index );
+            scale(root_index, left_index, right_index);
 
         }
         else if ( root.getNumberOfChildren() == 3 ) // unrooted trees have three children for the root
@@ -833,8 +834,8 @@ double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::computeLnProbab
             size_t middleIndex = middle.getIndex();
             fillLikelihoodVector( middle, middleIndex );
 
-            computeRootLikelihood( rootIndex, left_index, right_index, middleIndex );
-            scale(rootIndex, left_index, right_index, middleIndex);
+            computeRootLikelihood( root_index, left_index, right_index, middleIndex );
+            scale(root_index, left_index, right_index, middleIndex);
 
         }
         else
@@ -1015,7 +1016,7 @@ std::vector<charType> RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::
 		}
 
         // create the character
-        charType c;
+        charType c = charType( num_chars );
         c.setToFirstState();
 
 		// sum the likelihoods for each character state
@@ -1117,7 +1118,7 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::drawJointConditio
     {
 
         // create the character
-        charType c;
+        charType c = charType( num_chars );
         c.setToFirstState();
 
         // sum to sample
@@ -1125,7 +1126,8 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::drawJointConditio
 
 		// if the matrix is compressed use the pattern for this site
         size_t pattern = i;
-		if (compressed) {
+		if ( compressed == true )
+        {
 			pattern = site_pattern[i];
 		}
 
@@ -1195,12 +1197,50 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::drawJointConditio
         startStates[ children[i]->getIndex() ] = endStates[ root.getIndex() ];
 
         // recurse towards tips
-        if (!children[i]->isTip())
+        if ( children[i]->isTip() == false )
+        {
             recursivelyDrawJointConditionalAncestralStates(*children[i], startStates, endStates, sampledSiteRates);
+        }
         else
+        {
             tipDrawJointConditionalAncestralStates(*children[i], startStates, endStates, sampledSiteRates);
+        }
+        
     }
 }
+
+template<class charType>
+void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::executeMethod(const std::string &n, const std::vector<const DagNode *> &args, RbVector<double> &rv) const
+{
+    
+    if ( n == "siteLikelihoods" )
+    {
+        
+        // make sure the likelihoods are updated
+        const_cast<AbstractPhyloCTMCSiteHomogeneous<charType> *>( this )->computeLnProbability();
+        
+        // get the per site likelihood
+        std::vector<double> tmp = std::vector<double>(num_patterns, 0.0);
+        computeRootLikelihoods( tmp );
+        
+        // now match it back to the actual sites
+        rv = RbVector<double>(num_sites, 0.0);
+        for (size_t i=0; i<num_sites; ++i)
+        {
+            size_t pattern_index = site_pattern[i];
+            rv[i] = tmp[pattern_index] / pattern_counts[pattern_index];
+        }
+        
+    }
+    else
+    {
+        throw RbException("The PhyloCTMC process does not have a member method called '" + n + "'.");
+    }
+    
+}
+
+
+
 
 template<class charType>
 void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::recursivelyDrawJointConditionalAncestralStates(const TopologyNode &node, std::vector<std::vector<charType> >& startStates, std::vector<std::vector<charType> >& endStates, const std::vector<size_t>& sampledSiteRates)
@@ -1239,7 +1279,8 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::recursivelyDrawJo
 
 		// if the matrix is compressed use the pattern for this site
         size_t pattern = i;
-		if (compressed) {
+		if ( compressed == true )
+        {
 			pattern = site_pattern[i];
 		}
 
@@ -1261,7 +1302,7 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::recursivelyDrawJo
         }
 
         // sample char from p
-        charType c;
+        charType c = charType( num_chars );
         c.setToFirstState();
         double u = rng->uniform01() * sum;
         for (size_t state = 0; state < this->num_chars; state++)
@@ -1584,7 +1625,7 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::redrawValue( void
     for ( size_t i = 0; i < num_sites; ++i )
     {
         // create the character
-        charType c;
+        charType c = charType( num_chars );
         c.setToFirstState();
         // draw the state
         double u = rng->uniform01();
@@ -2041,7 +2082,7 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::simulate( const T
                 double *freqs = transition_prob_matrices[ perSiteRates[i] ][ parentState ];
 
                 // create the character
-                charType c;
+                charType c = charType( num_chars );
                 c.setToFirstState();
                 // draw the state
                 double u = rng->uniform01();
@@ -2398,7 +2439,7 @@ std::vector< std::vector<double> >* RevBayesCore::AbstractPhyloCTMCSiteHomogeneo
 
 
 template<class charType>
-double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::sumRootLikelihood( void )
+void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::computeRootLikelihoods( std::vector<double> &rv ) const
 {
     // get the root node
     const TopologyNode &root = tau->getValue().getRoot();
@@ -2451,8 +2492,6 @@ double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::sumRootLikeliho
 
     } // end-for over all mixtures (=rate categories)
 
-    // sum the log-likelihoods for all sites together
-    double sumPartialProbs = 0.0;
     // get the root frequencies
     const std::vector<double> &f = this->getRootFrequencies();
 
@@ -2469,13 +2508,13 @@ double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::sumRootLikeliho
 
                 if ( this->site_invariant[site] == true )
                 {
-                    sumPartialProbs += log( p_inv * f[ this->invariant_site_index[site] ] * exp(this->perNodeSiteLogScalingFactors[this->activeLikelihood[node_index]][node_index][site]) + oneMinusPInv * per_mixture_Likelihoods[site] / this->num_site_rates ) * *patterns;
+                    rv[site] = log( p_inv * f[ this->invariant_site_index[site] ] * exp(this->perNodeSiteLogScalingFactors[this->activeLikelihood[node_index]][node_index][site]) + oneMinusPInv * per_mixture_Likelihoods[site] / this->num_site_rates ) * *patterns;
                 }
                 else
                 {
-                    sumPartialProbs += log( oneMinusPInv * per_mixture_Likelihoods[site] / this->num_site_rates ) * *patterns;
+                    rv[site] = log( oneMinusPInv * per_mixture_Likelihoods[site] / this->num_site_rates ) * *patterns;
                 }
-                sumPartialProbs -= this->perNodeSiteLogScalingFactors[this->activeLikelihood[node_index]][node_index][site] * *patterns;
+                rv[site] -= this->perNodeSiteLogScalingFactors[this->activeLikelihood[node_index]][node_index][site] * *patterns;
 
             }
             else // no scaling
@@ -2483,11 +2522,11 @@ double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::sumRootLikeliho
 
                 if ( this->site_invariant[site] == true )
                 {
-                    sumPartialProbs += log( p_inv * f[ this->invariant_site_index[site] ]  + oneMinusPInv * per_mixture_Likelihoods[site] / this->num_site_rates ) * *patterns;
+                    rv[site] = log( p_inv * f[ this->invariant_site_index[site] ]  + oneMinusPInv * per_mixture_Likelihoods[site] / this->num_site_rates ) * *patterns;
                 }
                 else
                 {
-                    sumPartialProbs += log( oneMinusPInv * per_mixture_Likelihoods[site] / this->num_site_rates ) * *patterns;
+                    rv[site] = log( oneMinusPInv * per_mixture_Likelihoods[site] / this->num_site_rates ) * *patterns;
                 }
 
             }
@@ -2501,20 +2540,36 @@ double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::sumRootLikeliho
         for (size_t site = 0; site < pattern_block_size; ++site, ++patterns)
         {
 
-            sumPartialProbs += log( per_mixture_Likelihoods[site] / this->num_site_rates ) * *patterns;
+            rv[site] = log( per_mixture_Likelihoods[site] / this->num_site_rates ) * *patterns;
 
             if ( use_scaling == true )
             {
-
-                sumPartialProbs -= this->perNodeSiteLogScalingFactors[this->activeLikelihood[node_index]][node_index][site] * *patterns;
+                rv[site] -= this->perNodeSiteLogScalingFactors[this->activeLikelihood[node_index]][node_index][site] * *patterns;
             }
 
         }
 
-
     }
 
+}
 
+
+
+template<class charType>
+double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::sumRootLikelihood( void )
+{
+        
+
+    std::vector<double> site_likelihoods = std::vector<double>(pattern_block_size,0.0);
+    computeRootLikelihoods( site_likelihoods );
+    
+    double sum_partial_probs = 0.0;
+    
+    for (size_t site = 0; site < pattern_block_size; ++site)
+    {
+        sum_partial_probs += site_likelihoods[site];
+    }
+    
 #ifdef RB_MPI
 
     // we only need to send message if there is more than one process
@@ -2525,7 +2580,7 @@ double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::sumRootLikeliho
         if ( process_active == false )
         {
             // send from the workers the log-likelihood to the master
-            MPI::COMM_WORLD.Send(&sumPartialProbs, 1, MPI::DOUBLE, active_PID, 0);
+            MPI::COMM_WORLD.Send(&sum_partial_probs, 1, MPI::DOUBLE, active_PID, 0);
         }
 
         // receive the likelihoods from the helpers
@@ -2535,7 +2590,7 @@ double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::sumRootLikeliho
             {
                 double tmp = 0;
                 MPI::COMM_WORLD.Recv(&tmp, 1, MPI::DOUBLE, int(i), 0);
-                sumPartialProbs += tmp;
+                sum_partial_probs += tmp;
             }
         }
 
@@ -2544,19 +2599,19 @@ double RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::sumRootLikeliho
         {
             for (size_t i=active_PID+1; i<active_PID+num_processes; ++i)
             {
-                MPI::COMM_WORLD.Send(&sumPartialProbs, 1, MPI::DOUBLE, int(i), 0);
+                MPI::COMM_WORLD.Send(&sum_partial_probs, 1, MPI::DOUBLE, int(i), 0);
             }
         }
         else
         {
-            MPI::COMM_WORLD.Recv(&sumPartialProbs, 1, MPI::DOUBLE, active_PID, 0);
+            MPI::COMM_WORLD.Recv(&sum_partial_probs, 1, MPI::DOUBLE, active_PID, 0);
         }
     
     }
 
 #endif
 
-    return sumPartialProbs;
+    return sum_partial_probs;
 }
 
 

@@ -1,6 +1,5 @@
 #include "Dist_phyloCTMC.h"
-
-#include "AbstractPhyloCTMCSiteHomogeneous.h"
+#include "RlDistributionMemberFunction.h"
 #include "PhyloCTMCSiteHomogeneous.h"
 #include "FilteredPhyloCTMCSiteHomogeneous.h"
 #include "PhyloCTMCSiteHomogeneousNucleotide.h"
@@ -666,6 +665,19 @@ std::string Dist_phyloCTMC::getDistributionFunctionName( void ) const
     std::string d_name = "PhyloCTMC";
     
     return d_name;
+}
+
+
+MethodTable Dist_phyloCTMC::getDistributionMethods( void ) const
+{
+    
+    MethodTable methods = TypedDistribution<AbstractHomologousDiscreteCharacterData>::getDistributionMethods();
+    
+    // member functions
+    ArgumentRules* siteLikelihoodsArgRules = new ArgumentRules();
+    methods.addFunction( new DistributionMemberFunction<Dist_phyloCTMC, ModelVector<Real> >( "siteLikelihoods", variable, siteLikelihoodsArgRules, true ) );
+    
+    return methods;
 }
 
 
