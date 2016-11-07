@@ -9,6 +9,7 @@
 src/deprecated/*
 src/gui/*
 projects/cmake
+src/revlanguage/utils/GitVersion.cpp
 src/revlanguage/constants.h
 src/ui/constants.h
 boost_1_55_0/bootstrap.log

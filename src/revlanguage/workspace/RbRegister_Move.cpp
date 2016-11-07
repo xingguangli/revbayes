@@ -127,9 +127,11 @@
 /* Moves on continuous phyloprocesses (Brownian, multivariate Brownian, etc) */
 
 /* Tree proposals (in folder "datatypes/inference/moves/tree") */
+#include "Move_AddRemoveFossil.h"
 #include "Move_CollapseExpandFossilBranch.h"
 #include "Move_EmpiricalTree.h"
 #include "Move_FNPR.h"
+#include "Move_FossilTimeSlideUniform.h"
 #include "Move_GibbsPruneAndRegraft.h"
 #include "Move_NarrowExchange.h"
 #include "Move_NNIClock.h"
@@ -138,6 +140,7 @@
 #include "Move_NodeTimeSlideUniform.h"
 #include "Move_NodeTimeSlideBeta.h"
 #include "Move_RateAgeBetaShift.h"
+#include "Move_RootTimeSlideUniform.h"
 #include "Move_SpeciesNarrowExchange.h"
 #include "Move_SpeciesNodeTimeSlideUniform.h"
 #include "Move_SpeciesSubtreeScale.h"
@@ -257,9 +260,11 @@ void RevLanguage::Workspace::initializeMoveGlobalWorkspace(void)
         addTypeWithConstructor( new Move_BirthDeathFromAgeEvent()               );
 
         /* Tree proposals (in folder "datatypes/inference/moves/tree") */
+        //addTypeWithConstructor( new Move_AddRemoveFossil()     );
         addTypeWithConstructor( new Move_CollapseExpandFossilBranch()     );
 		addTypeWithConstructor( new Move_EmpiricalTree()                  );
         addTypeWithConstructor( new Move_FNPR()                           );
+        addTypeWithConstructor( new Move_FossilTimeSlideUniform()           );
         addTypeWithConstructor( new Move_GibbsPruneAndRegraft()           );
         addTypeWithConstructor( new Move_NarrowExchange()                 );
         addTypeWithConstructor( new Move_NNIClock()                       );
@@ -268,6 +273,7 @@ void RevLanguage::Workspace::initializeMoveGlobalWorkspace(void)
         addTypeWithConstructor( new Move_NodeTimeSlideUniform()           );
         addTypeWithConstructor( new Move_NodeTimeSlideBeta()              );
         addTypeWithConstructor( new Move_RateAgeBetaShift()               );
+        addTypeWithConstructor( new Move_RootTimeSlideUniform()           );
         addTypeWithConstructor( new Move_SubtreeScale()                   );
         addTypeWithConstructor( new Move_SPRNonclock()                    );
         addTypeWithConstructor( new Move_SpeciesNarrowExchange()          );

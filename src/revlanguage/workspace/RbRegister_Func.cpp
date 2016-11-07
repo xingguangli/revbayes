@@ -143,6 +143,7 @@
 #include "Func_lg.h"
 #include "Func_mtRev.h"
 #include "Func_mtMam.h"
+#include "Func_orderedRateMatrix.h"
 #include "Func_pomo.h"
 #include "Func_rtRev.h"
 #include "Func_vt.h"
@@ -166,12 +167,14 @@
 
 
 /* Cladogeneic state prob function */
-#include "Func_cladoProbs.h"
+#include "Func_DECCladoProbs.h"
 #include "Func_DECRates.h"
 #include "Func_DECRoot.h"
+#include "Func_EpochCladoProbs.h"
 #include "Func_chromosomesCladoProbs.h"
 #include "Func_chromosomesCladoEventsBD.h"
-//#include "Func_SampledCladogenesisRootFrequencies.h"
+#include "Func_MixtureCladoProbs.h"
+#include "Func_SampledCladogenesisRootFrequencies.h"
 
 
 /* Input/output functions (in folder "functions/io") */
@@ -179,6 +182,7 @@
 #include "Func_ancestralStateTree.h"
 #include "Func_consensusTree.h"
 #include "Func_convertToPhylowood.h"
+#include "Func_formatDiscreteCharacterData.h"
 #include "Func_mapTree.h"
 #include "Func_module.h"
 #include "Func_readAtlas.h"
@@ -206,12 +210,16 @@
 #include "Func_abs.h"
 #include "Func_absVector.h"
 #include "Func_ceil.h"
+#include "Func_choose.h"
 #include "Func_coala.h"
 #include "Func_diagonalMatrix.h"
+#include "Func_empiricalQuantile.h"
 #include "Func_exp.h"
 #include "Func_floor.h"
+#include "Func_gamma.h"
 #include "Func_lnProbability.h"
 #include "Func_hyperbolicTangent.h"
+#include "Func_hyperbolicSine.h"
 #include "Func_ln.h"
 #include "Func_log.h"
 #include "Func_logistic.h"
@@ -284,6 +292,7 @@ void RevLanguage::Workspace::initializeFuncGlobalWorkspace(void)
         addFunction( new Func_lg()                       );
         addFunction( new Func_mtMam()                    );
         addFunction( new Func_mtRev()                    );
+        addFunction( new Func_orderedRateMatrix()        );
         addFunction( new Func_pomo()                     );
         addFunction( new Func_rtRev()                    );
         addFunction( new Func_t92()                      );
@@ -298,12 +307,15 @@ void RevLanguage::Workspace::initializeFuncGlobalWorkspace(void)
         addFunction( new Func_biogeo_grm() );
 
         /* cladogenic probs used for e.g. DEC models (in folder "functions/phylogenetics") */
-        addFunction( new Func_cladoProbs() );
+        addFunction( new Func_DECCladoProbs() );
         addFunction( new Func_DECRates() );
         addFunction( new Func_DECRoot() );
+        addFunction( new Func_EpochCladoProbs() );
         addFunction( new Func_chromosomesCladoProbs() );
         addFunction( new Func_chromosomesCladoEventsBD() );
-//        addFunction( new Func_SampledCladogenesisRootFrequencies() );
+
+        addFunction( new Func_MixtureCladoProbs() );
+        addFunction( new Func_SampledCladogenesisRootFrequencies() );
 
 		/* Functions related to phylogenetic trees (in folder "functions/phylogenetics/tree") */
         addFunction( new Func_phyloDiversity() );
@@ -313,6 +325,7 @@ void RevLanguage::Workspace::initializeFuncGlobalWorkspace(void)
         addFunction( new Func_computeWeightedNodeOrderConstraintsScore());
         addFunction( new Func_concatenate()              );
         addFunction( new Func_constructRootedTripletDistribution()            );
+        addFunction( new Func_formatDiscreteCharacterData() );
         addFunction( new Func_extantTree()                );
         addFunction( new Func_maximumTree()              );
         addFunction( new Func_mrcaIndex()                );
@@ -346,11 +359,17 @@ void RevLanguage::Workspace::initializeFuncGlobalWorkspace(void)
         addFunction( new Func_ceil<Real,Integer>()  );
         addFunction( new Func_ceil<RealPos,Natural>()  );
         
+        // choose function
+        addFunction( new Func_choose() );
+        
         // coala function
         addFunction( new Func_coala()        );
 
         // diagonal matrix
         addFunction( new Func_diagonalMatrix() );
+        
+        // empirical quantile function
+        addFunction( new Func_empiricalQuantile()  );
 
         // exponential function
         addFunction( new Func_exp() );
@@ -359,6 +378,9 @@ void RevLanguage::Workspace::initializeFuncGlobalWorkspace(void)
         addFunction( new Func_floor<Real,Integer>()  );
         addFunction( new Func_floor<RealPos,Natural>()  );
 
+        // gamma function
+        addFunction( new Func_gamma() );
+        
         // logistic function
         addFunction( new Func_logistic() );
 
@@ -408,6 +430,9 @@ void RevLanguage::Workspace::initializeFuncGlobalWorkspace(void)
         // hyperbolic tangent function
         addFunction( new Func_hyperbolicTangent() );
 
+        // hyperbolic sine function
+        addFunction( new Func_hyperbolicSine() );
+        
 		// truncate function
         addFunction( new Func_trunc<Real,Integer>()  );
         addFunction( new Func_trunc<RealPos,Natural>()  );
