@@ -8,9 +8,68 @@
 #include "TopologyNode.h"
 #include "TransitionProbabilityMatrix.h"
 #include "TypedDistribution.h"
-#
 
 namespace RevBayesCore {
+
+double computeRootLikelihood2Nodes(const double *p_left,
+                                   const double *p_right,
+                                   const size_t numSiteRates,
+                                   const double * rootFreq,
+                                   const size_t numStates,
+                                   const size_t * patternCounts,
+                                   const size_t numPatterns,
+                                   const size_t siteOffset,
+                                   const size_t nodeIndex,
+                                   const size_t mixtureOffset,
+                                   const double p_inv,
+                                   const std::vector<bool> & siteInvariant,
+                                   const std::vector<size_t> & invariantSiteIndex);
+double computeRootLikelihood3Nodes(const double *p_left,
+                                   const double *p_right,
+                                   const double *p_middle,
+                                   const size_t numSiteRates,
+                                   const double * rootFreq,
+                                   const size_t numStates,
+                                   const size_t * patternCounts,
+                                   const size_t numPatterns,
+                                   const size_t siteOffset,
+                                   const size_t nodeIndex,
+                                   const size_t mixtureOffset,
+                                   const double p_inv,
+                                   const std::vector<bool> & siteInvariant,
+                                   const std::vector<size_t> & invariantSiteIndex);
+void computeInternalNodeLikelihood(double * p_node,
+                                    const double *p_left,
+                                    const double *p_right,
+                                    const size_t numSiteRates,
+                                    const size_t numStates,
+                                    const size_t numPatterns,
+                                    const size_t siteOffset,
+                                    const size_t nodeIndex,
+                                    const size_t mixtureOffset,
+                                    const double ** tpMats);
+void computeInternalNodeLikelihood(double * p_node,
+                                       const double *p_left,
+                                       const double *p_right,
+                                       const double *p_middle,
+                                       const size_t numSiteRates,
+                                       const size_t numStates,
+                                       const size_t numPatterns,
+                                       const size_t siteOffset,
+                                       const size_t nodeIndex,
+                                       const size_t mixtureOffset,
+                                       const double ** tpMats);
+void computeTipNodeLikelihood(double * p_node,
+                               const size_t numSiteRates,
+                               const size_t numStates,
+                               const size_t numPatterns,
+                               const size_t siteOffset,
+                               const size_t nodeIndex,
+                               const size_t mixtureOffset,
+                               const double ** tpMats,
+                               const std::vector<bool> &gap_node,
+                               const std::vector<unsigned long> &char_node,
+                               const bool usingAmbiguousCharacters);
     
     template<class charType>
     class PhyloCTMCSiteHomogeneous : public AbstractPhyloCTMCSiteHomogeneous<charType> {

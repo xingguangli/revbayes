@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include <cassert>
-#include "AbstractPhyloCTMCSiteHomogeneous.h" // too broad an include, but this is where the computeInternalNodeLikelihood... funcs are declared
+#include "PhyloCTMCSiteHomogeneous.h" // too broad an include, but this is where the computeInternalNodeLikelihood... funcs are declared
 #include "AscertainmentBiasCorrection.h"
 #include "RbException.h"
 #include "TopologyNode.h"
