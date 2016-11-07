@@ -185,7 +185,6 @@ const size_t numActiveLikelihoods = 2; // compile-time constant, but should be r
         size_t                                                              siteOffset;
 //        size_t                                                              nodeOffsetMarginal;
 //        size_t                                                              siteOffsetMarginal;
-        size_t                                                              nodeIndex;
 
 
         // flags
@@ -275,7 +274,6 @@ RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::AbstractPhyloCTMCSiteH
     invariant_site_index( num_sites, 0 ),
     num_patterns( num_sites ),
     compressed( c ),
-    nodeIndex( 0 ),
     site_pattern( std::vector<size_t>(num_sites, 0) ),
     touched( false ),
     changed_nodes( std::vector<bool>(num_nodes, false) ),
@@ -1802,19 +1800,7 @@ template<class charType>
 void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::scale( size_t node_index, size_t left, size_t right )
 {
 
-    size_t ali = this->activeLikelihood.at(nodeIndex);
-    size_t leftali = this->activeLikelihood.at(left);
-    size_t rightali = this->activeLikelihood.at(right);
-    double* p_node = this->partialLikelihoods + ali*this->activeLikelihoodOffset + nodeIndex*this->nodeOffset;
-    std::vector< std::vector<double> > & activePNSLSF = this->perNodeSiteLogScalingFactors.at(ali);
-    std::vector<double> & nodesActivePNSLSF = activePNSLSF.at(nodeIndex);
-    const std::vector< std::vector<double> > & leftActivePNSLSF = this->perNodeSiteLogScalingFactors.at(leftali);
-    const std::vector<double> & leftNodesActivePNSLSF = leftActivePNSLSF.at(leftali);
-    const std::vector< std::vector<double> > & rightActivePNSLSF = this->perNodeSiteLogScalingFactors.at(rightali);
-    const std::vector<double> & rightNodesActivePNSLSF = rightActivePNSLSF.at(rightali);
-
-    if ( use_scaling == true && nodeIndex % 4 == 0 )
-    double* p_node = this->partialLikelihoods + this->activeLikelihood[nodeIndex]*this->activeLikelihoodOffset + nodeIndex*this->nodeOffset;
+    double* p_node = this->partialLikelihoods + this->activeLikelihood[node_index]*this->activeLikelihoodOffset + node_index*this->nodeOffset;
 
     if ( use_scaling == true && node_index % RbSettings::userSettings().getScalingDensity() == 0 )
     {
@@ -1851,7 +1837,7 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::scale( size_t nod
             }
 
 
-            this->perNodeSiteLogScalingFactors[this->activeLikelihood[nodeIndex]][nodeIndex][site] = this->perNodeSiteLogScalingFactors[this->activeLikelihood[left]][left][site] + this->perNodeSiteLogScalingFactors[this->activeLikelihood[right]][right][site] - log(max);
+            this->perNodeSiteLogScalingFactors[this->activeLikelihood[node_index]][node_index][site] = this->perNodeSiteLogScalingFactors[this->activeLikelihood[left]][left][site] + this->perNodeSiteLogScalingFactors[this->activeLikelihood[right]][right][site] - log(max);
 
 
             // compute the per site probabilities
@@ -1878,7 +1864,7 @@ void RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::scale( size_t nod
         // iterate over all mixture categories
         for (size_t site = 0; site < this->pattern_block_size ; ++site)
         {
-            nodesActivePNSLSF.at(site) = this->perNodeSiteLogScalingFactors[this->activeLikelihood[left]][left][site] + this->perNodeSiteLogScalingFactors[this->activeLikelihood[right]][right][site];
+            this->perNodeSiteLogScalingFactors[this->activeLikelihood[node_index]][node_index][site] = this->perNodeSiteLogScalingFactors[this->activeLikelihood[left]][left][site] + this->perNodeSiteLogScalingFactors[this->activeLikelihood[right]][right][site];
 
         }
 
