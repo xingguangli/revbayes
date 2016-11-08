@@ -265,7 +265,7 @@ RevBayesCore::AbstractPhyloCTMCSiteHomogeneous<charType>::AbstractPhyloCTMCSiteH
 //    marginalLikelihoods( new double[num_nodes*num_site_rates*num_sites*num_chars] ),
     marginalLikelihoods( NULL ),
     perNodeSiteLogScalingFactors( std::vector<std::vector< std::vector<double> > >(2, std::vector<std::vector<double> >(num_nodes, std::vector<double>(num_sites, 0.0) ) ) ),
-    use_scaling( true ),
+    use_scaling( false ),
     ambiguous_char_matrix(),
     char_matrix(),
     gap_matrix(),

@@ -53,7 +53,7 @@ RevBayesCore::VariableOnlyAscBiasCorrection::VariableOnlyAscBiasCorrection(const
     :numStates(ns),
     numMixtures(nm) {
     //std::cerr << "RevBayesCore::VariableOnlyAscBiasCorrection::VariableOnlyAscBiasCorrection" << std::endl;
-    partialLikelihoods.reserve(this->numStates * this->numStates * this->numMixtures);
+    partialLikelihoods.resize(this->numStates * this->numStates * this->numMixtures);
 }
 RevBayesCore::VariableOnlyAscBiasCorrection::~VariableOnlyAscBiasCorrection() {
 
@@ -84,6 +84,8 @@ void RevBayesCore::VariableOnlyAscBiasCorrection::computeInternalAscBias(const A
     assert(nSiteRates == aR->numMixtures);
     const size_t numProxyPatterns = this->GetNumProxyPatterns(nPatterns);
     const unsigned plLen = this->numStates * numProxyPatterns * nSiteRates;
+    size_t aLlen = aL->partialLikelihoods.size();
+    size_t aRlen = aR->partialLikelihoods.size();
     assert(plLen == aL->partialLikelihoods.size());
     assert(plLen == aR->partialLikelihoods.size());
     if (this->partialLikelihoods.size() < plLen) {
@@ -126,7 +128,6 @@ void RevBayesCore::VariableOnlyAscBiasCorrection::computeTipAscBias(size_t nSite
     std::vector<bool> proxyGapNode;
     std::vector<unsigned long> proxyData;
     this->fillProxyTip(proxyGapNode, proxyData, nPatterns, gap_node, char_node);
-    const std::size_t bogusNodeIndex = 0;
     computeTipNodeLikelihood(&(this->partialLikelihoods[0]),
                               nSiteRates,
                               nStates,

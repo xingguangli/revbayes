@@ -2,6 +2,7 @@
 #define FilteredPhyloCTMCSiteHomogeneous_H
 
 #include "AbstractPhyloCTMCSiteHomogeneous.h"
+#include "AscertainmentBiasCorrection.h"
 #include "DnaState.h"
 #include "RateMatrix.h"
 #include "RbVector.h"
@@ -98,10 +99,11 @@ namespace RevBayesCore {
                                           const bool usingAmbiguousCharacters);
 
     template<class charType, class treeType>
-    class FilteredPhyloCTMCSiteHomogeneous : public AbstractPhyloCTMCSiteHomogeneous<charType> {
+    class FilteredPhyloCTMCSiteHomogeneous : public PhyloCTMCSiteHomogeneous<charType> {
 
     public:
         FilteredPhyloCTMCSiteHomogeneous(const TypedDagNode< treeType > *t, size_t nChars, bool compressed, size_t nSites);
+        FilteredPhyloCTMCSiteHomogeneous(const FilteredPhyloCTMCSiteHomogeneous&);
         virtual                                            ~FilteredPhyloCTMCSiteHomogeneous(void);                                                                   //!< Virtual destructor
         // public member functions
         FilteredPhyloCTMCSiteHomogeneous*                           clone(void) const;                                                                          //!< Create an independent clone
@@ -113,7 +115,7 @@ namespace RevBayesCore {
             const size_t ascActStride = this->num_nodes;
             const size_t abind = ascActStride*actInd + nodeIndex;
             while (abind >= ascBiasCorrStructs.size()) {
-              this->ascBiasCorrStructs.push_back(allocOneAscBiasCorrStruct(this->num_chars));
+              this->ascBiasCorrStructs.push_back(allocOneAscBiasCorrStruct(this->num_chars,this->num_site_rates));
             }
             return this->ascBiasCorrStructs.at(abind);
         }
@@ -122,7 +124,7 @@ namespace RevBayesCore {
             const size_t ascActStride = this->num_nodes;
             const size_t abind = ascActStride*actInd + nodeIndex;
             while (abind >= ascBiasCorrStructs.size()) {
-              this->ascBiasCorrStructs.push_back(allocOneAscBiasCorrStruct(this->num_chars));
+              this->ascBiasCorrStructs.push_back(allocOneAscBiasCorrStruct(this->num_chars,this->num_site_rates));
             }
             return const_cast<const AscertainmentBiasCorrectionStruct *>(this->ascBiasCorrStructs.at(abind));
         }
@@ -132,6 +134,7 @@ namespace RevBayesCore {
         void                                                computeInternalNodeLikelihood(const TopologyNode &n, size_t nIdx, size_t l, size_t r, size_t m);
 
         void                                                computeTipLikelihood(const TopologyNode &node, size_t nIdx);
+        double                                              sumRootLikelihood();
 
 
     private:
@@ -158,8 +161,17 @@ RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::FilteredPhyl
                                                                                                      size_t nChars,
                                                                                                      bool compressed,
                                                                                                      size_t nSites)
-   : AbstractPhyloCTMCSiteHomogeneous<charType>(  t, nChars, 1, compressed, nSites, true ) {
+   : PhyloCTMCSiteHomogeneous<charType>(  t, nChars, compressed, nSites, true ) {
     //this->ascBiasCorrStructs = allocAscBiasCorrStructs(numActiveLikelihoods, this->num_nodes, nChars);
+}
+
+template<class charType, class treeType>
+RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::FilteredPhyloCTMCSiteHomogeneous(const FilteredPhyloCTMCSiteHomogeneous& d)
+    : PhyloCTMCSiteHomogeneous<charType>(d),
+      uncorrectedLnProb(d.uncorrectedLnProb),
+      ascBiasLnProb(d.ascBiasLnProb)
+{
+
 }
 
 
@@ -204,34 +216,14 @@ void RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::compute
                                                        this->ascBiasLnProb);
 }
 
-
 template<class charType, class treeType>
 void RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::computeRootLikelihood( size_t root, size_t left, size_t right, size_t middle) {
-    const double* p_left   = this->partialLikelihoods + this->activeLikelihood[left]*this->activeLikelihoodOffset + left*this->nodeOffset;
-    const double* p_right  = this->partialLikelihoods + this->activeLikelihood[right]*this->activeLikelihoodOffset + right*this->nodeOffset;
-    const double* p_middle = this->partialLikelihoods + this->activeLikelihood[middle]*this->activeLikelihoodOffset + middle*this->nodeOffset;
     const AscertainmentBiasCorrectionStruct * ascLeft = this->getAscBiasStruct(left);
     const AscertainmentBiasCorrectionStruct * ascRight = this->getAscBiasStruct(right);
     const AscertainmentBiasCorrectionStruct * ascMiddle = this->getAscBiasStruct(middle);
-    this->lnProb = computeRootFilteredLikelihood3Nodes(p_left,
-                                                       p_right,
-                                                       p_middle,
-                                                       this->num_site_rates,
-                                                       &(this->getRootFrequencies()[0]),
-                                                       this->num_chars,
-                                                       &(this->pattern_counts[0]),
-                                                       this->num_patterns,
-                                                       this->siteOffset,
-                                                       root,
-                                                       this->mixtureOffset,
-                                                       this->p_inv->getValue(),
-                                                       this->site_invariant,
-                                                       this->invariant_site_index,
-                                                       ascLeft,
-                                                       ascRight,
-                                                       ascMiddle,
-                                                       this->uncorrectedLnProb,
-                                                       this->ascBiasLnProb);
+
+    ascBiasLnProb = ascLeft->computeAscBiasLnProbCorrection3Node(ascRight, ascMiddle, this->num_site_rates, &(this->getRootFrequencies()[0]), this->num_chars, &(this->pattern_counts[0]), this->num_patterns, this->p_inv->getValue(), this->site_invariant, this->invariant_site_index);
+    PhyloCTMCSiteHomogeneous<charType>::computeRootLikelihood(root, left, right, middle);
 }
 
 
@@ -322,5 +314,14 @@ void RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::compute
                                      this->using_ambiguous_characters);
 }
 
+template<class charType, class treeType>
+double RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::sumRootLikelihood( void )
+{
 
+    double sum_partial_probs = AbstractPhyloCTMCSiteHomogeneous<charType>::sumRootLikelihood();
+
+    sum_partial_probs += this->ascBiasLnProb;
+
+    return sum_partial_probs;
+}
 #endif
