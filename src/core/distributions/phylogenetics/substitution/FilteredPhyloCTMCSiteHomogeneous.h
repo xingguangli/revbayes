@@ -320,7 +320,7 @@ double RevBayesCore::FilteredPhyloCTMCSiteHomogeneous<charType, treeType>::sumRo
 
     double sum_partial_probs = AbstractPhyloCTMCSiteHomogeneous<charType>::sumRootLikelihood();
 
-    sum_partial_probs += this->ascBiasLnProb;
+    sum_partial_probs -= this->ascBiasLnProb;
 
     return sum_partial_probs;
 }

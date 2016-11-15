@@ -13,7 +13,7 @@ using namespace RevBayesCore;
 
 RevBayesCore::AscertainmentBiasCorrectionStruct * RevBayesCore::allocOneAscBiasCorrStruct(const size_t numStates,
                                                                                                      const size_t numMixtures) {
-    return new RevBayesCore::VariableOnlyAscBiasCorrection(numStates, numMixtures);
+    return new RevBayesCore::MissingAwareVariableOnlyAscertainmentBiasCorrection(numStates, numMixtures);
 }
 
 std::vector<RevBayesCore::AscertainmentBiasCorrectionStruct *> RevBayesCore::allocAscBiasCorrStructs(const size_t numCopies,
